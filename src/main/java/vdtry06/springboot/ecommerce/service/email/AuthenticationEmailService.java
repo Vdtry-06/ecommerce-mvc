@@ -101,7 +101,6 @@ public class AuthenticationEmailService {
         return userMapper.toRegisterUserResponse(user);
     }
 
-
     private void sendVerificationEmail(User user) {
         String topic = "verification-codes";
         String message = user.getEmail() + "," + user.getVerificationCode();

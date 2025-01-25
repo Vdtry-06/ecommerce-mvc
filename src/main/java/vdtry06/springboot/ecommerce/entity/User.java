@@ -44,6 +44,8 @@ public class User implements UserDetails {
     @Column(name = "verification_expiration")
     LocalDateTime verificationExpiration;
 
+    boolean enabledResetPassword;
+
     String firstName;
     String lastName;
     LocalDate dateOfBirth;

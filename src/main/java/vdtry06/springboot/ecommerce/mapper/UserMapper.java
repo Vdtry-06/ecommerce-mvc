@@ -6,6 +6,7 @@ import org.mapstruct.MappingTarget;
 
 import vdtry06.springboot.ecommerce.dto.request.RegisterUserRequest;
 import vdtry06.springboot.ecommerce.dto.request.UserUpdationRequest;
+import vdtry06.springboot.ecommerce.dto.request.password.SendEmailRequest;
 import vdtry06.springboot.ecommerce.dto.response.RegisterUserResponse;
 import vdtry06.springboot.ecommerce.dto.response.UserResponse;
 import vdtry06.springboot.ecommerce.entity.User;
@@ -13,6 +14,8 @@ import vdtry06.springboot.ecommerce.entity.User;
 @Mapper(componentModel = "spring")
 public interface UserMapper {
     User toUser(RegisterUserRequest request);
+
+    User toUserSendEmail(SendEmailRequest request);
 
     UserResponse toUserResponse(User user);
 
