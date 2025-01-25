@@ -1,6 +1,4 @@
 package vdtry06.springboot.ecommerce.service.email;
-
-import jakarta.mail.MessagingException;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -19,6 +17,7 @@ import vdtry06.springboot.ecommerce.exception.ErrorCode;
 import vdtry06.springboot.ecommerce.mapper.UserMapper;
 import vdtry06.springboot.ecommerce.repository.RoleRepository;
 import vdtry06.springboot.ecommerce.repository.UserRepository;
+import vdtry06.springboot.ecommerce.service.kafka.KafkaProducerService;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -31,7 +30,6 @@ import java.util.Random;
 public class AuthenticationEmailService {
     UserRepository userRepository;
     PasswordEncoder passwordEncoder;
-    EmailService emailService;
     RoleRepository roleRepository;
     UserMapper userMapper;
     KafkaProducerService kafkaProducerService;
@@ -62,42 +60,48 @@ public class AuthenticationEmailService {
         return userMapper.toRegisterUserResponse(user);
     }
 
-
-
     public void verifyUserSignup(VerifyUserRequest request) {
         Optional<User> optionalUser = userRepository.findByEmail(request.getEmail());
-        if(optionalUser.isPresent()) {
-            User user = optionalUser.get();
-            if(user.getVerificationExpiration().isBefore(LocalDateTime.now())) {
-                throw new AppException(ErrorCode.CODE_EXPIRED);
-            }
-            if(user.getVerificationCode().equals(request.getVerificationCode())) {
-                user.setEnabled(true);
-                user.setVerificationCode(null);
-                user.setVerificationExpiration(null);
-                userRepository.save(user);
-            } else {
-                throw new AppException(ErrorCode.INVALID_CODE);
-            }
-        } else {
+
+        if(optionalUser.isEmpty()) {
             throw new AppException(ErrorCode.USER_NOT_EXISTED);
         }
+
+        User user = optionalUser.get();
+        if(user.getVerificationExpiration().isBefore(LocalDateTime.now())) {
+            throw new AppException(ErrorCode.CODE_EXPIRED);
+        }
+
+        if(!user.getVerificationCode().equals(request.getVerificationCode())) {
+            throw new AppException(ErrorCode.INVALID_CODE);
+        }
+
+        user.setEnabled(true);
+        user.setVerificationCode(null);
+        user.setVerificationExpiration(null);
+        userRepository.save(user);
     }
-    public void resendVerificationCode(String email) {
+
+    public RegisterUserResponse resendVerificationCode(String email) {
         Optional<User> optionalUser = userRepository.findByEmail(email);
-        if (optionalUser.isPresent()) {
-            User user = optionalUser.get();
-            if (user.isEnabled()) {
-                throw new AppException(ErrorCode.ACCOUNT_VERIFIED);
-            }
-            user.setVerificationCode(generateVerificationCode());
-            user.setVerificationExpiration(LocalDateTime.now().plusHours(1));
-            sendVerificationEmail(user);
-            userRepository.save(user);
-        } else {
+
+        if(optionalUser.isEmpty()) {
             throw new AppException(ErrorCode.USER_NOT_EXISTED);
         }
+
+        User user = optionalUser.get();
+        if(user.isEnabled()) {
+            throw new AppException(ErrorCode.ACCOUNT_VERIFIED);
+        }
+
+        user.setVerificationCode(generateVerificationCode());
+        user.setVerificationExpiration(LocalDateTime.now().plusMinutes(15));
+        sendVerificationEmail(user);
+        userRepository.save(user);
+        return userMapper.toRegisterUserResponse(user);
     }
+
+
     private void sendVerificationEmail(User user) {
         String topic = "verification-codes";
         String message = user.getEmail() + "," + user.getVerificationCode();

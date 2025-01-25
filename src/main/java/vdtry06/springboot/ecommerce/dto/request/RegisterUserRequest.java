@@ -24,9 +24,4 @@ public class RegisterUserRequest {
     @Size(min = 8, message = "INVALID_PASSWORD")
     String password;
 
-//    String firstName;
-//    String lastName;
-//
-//    @BirthConstraint(min = 16, message = "INVALID_BIRTHDAY")
-//    LocalDate dateOfBirth;
 }

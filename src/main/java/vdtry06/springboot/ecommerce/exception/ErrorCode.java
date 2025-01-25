@@ -28,6 +28,7 @@ public enum ErrorCode {
     INVALID_CODE(1018, "Invalid verification code", HttpStatus.BAD_REQUEST),
     CODE_EXPIRED(1019, "Verification code has expired", HttpStatus.BAD_REQUEST),
     EMAIL_SEND_FAILED(1020, "Email send failed", HttpStatus.BAD_REQUEST),
+    ACCOUNT_NOT_VERIFIED(1021, "Account is not verified", HttpStatus.BAD_REQUEST),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

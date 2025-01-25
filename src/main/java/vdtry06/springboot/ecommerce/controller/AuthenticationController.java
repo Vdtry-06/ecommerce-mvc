@@ -38,55 +38,41 @@ public class AuthenticationController {
     @PostMapping("/login")
     ApiResponse<AuthenticationResponse> login(@RequestBody LoginUserRequest request) throws ParseException {
         var result = authenticationService.login(request);
-        return ApiResponse.<AuthenticationResponse>builder().data(result).build();
+        return ApiResponse.<AuthenticationResponse>builder()
+                .data(result)
+                .build();
     }
 
     @PostMapping("/verify")
     public ApiResponse<String> verifyUser(@RequestBody VerifyUserRequest request) {
-        try {
-            authenticationEmailService.verifyUserSignup(request);
-            return ApiResponse.<String>builder()
-                    .code(200)
-                    .message("Verification code sent")
-                    .data(null)
-                    .build();
-        } catch (RuntimeException e) {
-            return ApiResponse.<String>builder()
-                    .code(400)
-                    .message(e.getMessage())
-                    .data(null)
-                    .build();
-        }
+        authenticationEmailService.verifyUserSignup(request);
+        return ApiResponse.<String>builder()
+                .code(200)
+                .message("Successfully verified user")
+                .data(null)
+                .build();
     }
 
     @PostMapping("/resend")
-    public ApiResponse<String> resendVerificationCode(@RequestParam String email) {
-        try {
-            authenticationEmailService.resendVerificationCode(email);
-            return ApiResponse.<String>builder()
-                    .code(200)
-                    .message("Verification code sent")
-                    .data(null)
-                    .build();
-        } catch (RuntimeException e) {
-            return ApiResponse.<String>builder()
-                    .code(400)
-                    .message(e.getMessage())
-                    .data(null)
-                    .build();
-        }
+    public ApiResponse<RegisterUserResponse> resendVerificationCode(@RequestParam String email) {
+        return ApiResponse.<RegisterUserResponse>builder()
+                .data(authenticationEmailService.resendVerificationCode(email))
+                .build();
     }
 
     @PostMapping("/introspect")
     ApiResponse<IntrospectResponse> introspect(@RequestBody IntrospectRequest request) throws ParseException, JOSEException {
         var result = authenticationService.introspect(request);
-        return ApiResponse.<IntrospectResponse>builder().data(result).build();
+        return ApiResponse.<IntrospectResponse>builder()
+                .data(result)
+                .build();
     }
 
     @PostMapping("/logout")
     ApiResponse<Void> logout(@RequestBody LogoutRequest request) throws ParseException, JOSEException {
         authenticationService.logout(request);
-        return ApiResponse.<Void>builder().build();
+        return ApiResponse.<Void>builder()
+                .build();
     }
 
     @PostMapping("/refresh")
@@ -94,6 +80,8 @@ public class AuthenticationController {
             throws ParseException, JOSEException {
         log.info("Refresh request: {}", request);
         var result = authenticationService.refreshToken(request);
-        return ApiResponse.<AuthenticationResponse>builder().data(result).build();
+        return ApiResponse.<AuthenticationResponse>builder()
+                .data(result)
+                .build();
     }
 }

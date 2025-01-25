@@ -1,4 +1,4 @@
-package vdtry06.springboot.ecommerce.service.email;
+package vdtry06.springboot.ecommerce.service.kafka;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
