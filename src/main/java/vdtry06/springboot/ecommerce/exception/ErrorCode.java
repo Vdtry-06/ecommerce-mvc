@@ -31,7 +31,9 @@ public enum ErrorCode {
     ACCOUNT_NOT_VERIFIED(1021, "Account is not verified", HttpStatus.BAD_REQUEST),
     INVALID_TOKEN(1022, "Incorrect token", HttpStatus.BAD_REQUEST),
     PASSWORD_MISMATCH(1023, "Passwords do not match", HttpStatus.BAD_REQUEST),
-    EMAIL_NOT_FOUND(1024, "Email not found", HttpStatus.BAD_REQUEST),;
+    EMAIL_NOT_FOUND(1024, "Email not found", HttpStatus.BAD_REQUEST),
+    CATEGORY_NOT_EXISTED(1025, "Category not exists", HttpStatus.BAD_REQUEST),
+    CATEGORY_NAME_EXISTS(1026, "Category name already exists", HttpStatus.BAD_REQUEST),;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
         this.code = code;

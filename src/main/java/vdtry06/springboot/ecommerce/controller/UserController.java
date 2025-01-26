@@ -22,7 +22,7 @@ import vdtry06.springboot.ecommerce.service.UserService;
 @Slf4j
 public class UserController {
 
-    private final UserService userService;
+    UserService userService;
 
     @PutMapping("/users")
     public ApiResponse<UserResponse> updateUser(@RequestBody @Valid UserUpdationRequest request) {
