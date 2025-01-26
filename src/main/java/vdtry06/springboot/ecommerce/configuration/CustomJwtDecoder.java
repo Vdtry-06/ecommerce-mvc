@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 
 import com.nimbusds.jose.JOSEException;
 
-import vdtry06.springboot.ecommerce.dto.request.IntrospectRequest;
+import vdtry06.springboot.ecommerce.dto.request.verify.IntrospectRequest;
 import vdtry06.springboot.ecommerce.service.AuthenticationService;
 
 @Component

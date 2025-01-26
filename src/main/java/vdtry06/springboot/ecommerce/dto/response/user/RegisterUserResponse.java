@@ -1,7 +1,8 @@
-package vdtry06.springboot.ecommerce.dto.response;
+package vdtry06.springboot.ecommerce.dto.response.user;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import vdtry06.springboot.ecommerce.dto.response.verify.RoleResponse;
 
 import java.time.LocalDateTime;
 import java.util.Set;

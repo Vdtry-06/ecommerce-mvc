@@ -1,4 +1,4 @@
-package vdtry06.springboot.ecommerce.dto.request;
+package vdtry06.springboot.ecommerce.dto.request.user;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;

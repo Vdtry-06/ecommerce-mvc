@@ -8,9 +8,9 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import vdtry06.springboot.ecommerce.dto.request.PermissionRequest;
+import vdtry06.springboot.ecommerce.dto.request.verify.PermissionRequest;
 import vdtry06.springboot.ecommerce.dto.ApiResponse;
-import vdtry06.springboot.ecommerce.dto.response.PermissionResponse;
+import vdtry06.springboot.ecommerce.dto.response.verify.PermissionResponse;
 import vdtry06.springboot.ecommerce.service.PermissionService;
 
 @RestController

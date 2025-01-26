@@ -1,4 +1,4 @@
-package vdtry06.springboot.ecommerce.dto.response;
+package vdtry06.springboot.ecommerce.dto.response.verify;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

@@ -10,9 +10,9 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import vdtry06.springboot.ecommerce.dto.request.UserUpdationRequest;
+import vdtry06.springboot.ecommerce.dto.request.user.UserUpdationRequest;
 import vdtry06.springboot.ecommerce.dto.ApiResponse;
-import vdtry06.springboot.ecommerce.dto.response.UserResponse;
+import vdtry06.springboot.ecommerce.dto.response.user.UserResponse;
 import vdtry06.springboot.ecommerce.service.UserService;
 
 @RestController

@@ -1,14 +1,15 @@
-package vdtry06.springboot.ecommerce.dto.request;
+package vdtry06.springboot.ecommerce.dto.response.verify;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class PermissionRequest {
-    String name;
-    String description;
+public class AuthenticationResponse {
+    String token;
+    Long expiryTime;
 }

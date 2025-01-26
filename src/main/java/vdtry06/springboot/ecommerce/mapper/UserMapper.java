@@ -4,11 +4,11 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
-import vdtry06.springboot.ecommerce.dto.request.RegisterUserRequest;
-import vdtry06.springboot.ecommerce.dto.request.UserUpdationRequest;
+import vdtry06.springboot.ecommerce.dto.request.user.RegisterUserRequest;
+import vdtry06.springboot.ecommerce.dto.request.user.UserUpdationRequest;
 import vdtry06.springboot.ecommerce.dto.request.password.SendEmailRequest;
-import vdtry06.springboot.ecommerce.dto.response.RegisterUserResponse;
-import vdtry06.springboot.ecommerce.dto.response.UserResponse;
+import vdtry06.springboot.ecommerce.dto.response.user.RegisterUserResponse;
+import vdtry06.springboot.ecommerce.dto.response.user.UserResponse;
 import vdtry06.springboot.ecommerce.entity.User;
 
 @Mapper(componentModel = "spring")

@@ -1,4 +1,4 @@
-package vdtry06.springboot.ecommerce.dto.response;
+package vdtry06.springboot.ecommerce.dto.request.verify;
 
 import java.util.Set;
 
@@ -10,8 +10,8 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class    RoleResponse {
+public class RoleRequest {
     String name;
     String description;
-    Set<PermissionResponse> permissions;
+    Set<String> permissions;
 }

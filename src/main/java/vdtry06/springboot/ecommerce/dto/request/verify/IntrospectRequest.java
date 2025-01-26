@@ -1,14 +1,13 @@
-package vdtry06.springboot.ecommerce.dto.request;
+package vdtry06.springboot.ecommerce.dto.request.verify;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LoginUserRequest {
-    String email;
-    String password;
+public class IntrospectRequest {
+    String token;
 }

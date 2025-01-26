@@ -7,8 +7,8 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import vdtry06.springboot.ecommerce.dto.ApiResponse;
-import vdtry06.springboot.ecommerce.dto.request.AddressRequest;
-import vdtry06.springboot.ecommerce.dto.response.AddressResponse;
+import vdtry06.springboot.ecommerce.dto.request.address.AddressRequest;
+import vdtry06.springboot.ecommerce.dto.response.address.AddressResponse;
 import vdtry06.springboot.ecommerce.service.AddressService;
 
 import java.util.List;

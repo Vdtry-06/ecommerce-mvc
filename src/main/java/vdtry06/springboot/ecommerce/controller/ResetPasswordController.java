@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 import vdtry06.springboot.ecommerce.dto.ApiResponse;
 import vdtry06.springboot.ecommerce.dto.request.password.ResetPassword;
 import vdtry06.springboot.ecommerce.dto.request.password.SendEmailRequest;
-import vdtry06.springboot.ecommerce.dto.response.RegisterUserResponse;
-import vdtry06.springboot.ecommerce.dto.response.UserResponse;
+import vdtry06.springboot.ecommerce.dto.response.user.RegisterUserResponse;
+import vdtry06.springboot.ecommerce.dto.response.user.UserResponse;
 import vdtry06.springboot.ecommerce.service.password.ResetPasswordService;
 
 @Slf4j

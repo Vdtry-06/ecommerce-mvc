@@ -8,9 +8,9 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import vdtry06.springboot.ecommerce.dto.request.RoleRequest;
+import vdtry06.springboot.ecommerce.dto.request.verify.RoleRequest;
 import vdtry06.springboot.ecommerce.dto.ApiResponse;
-import vdtry06.springboot.ecommerce.dto.response.RoleResponse;
+import vdtry06.springboot.ecommerce.dto.response.verify.RoleResponse;
 import vdtry06.springboot.ecommerce.service.RoleService;
 
 @RestController
