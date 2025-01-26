@@ -19,7 +19,6 @@ import vdtry06.springboot.ecommerce.entity.User;
 import vdtry06.springboot.ecommerce.exception.AppException;
 import vdtry06.springboot.ecommerce.exception.ErrorCode;
 import vdtry06.springboot.ecommerce.mapper.UserMapper;
-import vdtry06.springboot.ecommerce.repository.RoleRepository;
 import vdtry06.springboot.ecommerce.repository.UserRepository;
 
 @Slf4j
@@ -41,12 +40,28 @@ public class UserService {
 
         log.info("User updated: " + request.getPassword());
 
-        if(userRepository.existsByPassword(request.getPassword())) throw new AppException(ErrorCode.PASSWORD_EXISTED);
+        if(request.getPassword() != null && !request.getPassword().equals(user.getPassword())) {
+            if(userRepository.existsByPassword(request.getPassword())) {
+                throw new AppException(ErrorCode.PASSWORD_EXISTED);
+            }
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
 
-        userMapper.updateUser(user, request);
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        if(request.getFirstName() != null && !request.getFirstName().equals(user.getFirstName())) {
+            user.setFirstName(request.getFirstName());
+        }
 
-        return userMapper.toUserResponse(userRepository.save(user));
+        if(request.getLastName() != null && !request.getLastName().equals(user.getLastName())) {
+            user.setLastName(request.getLastName());
+        }
+
+        if(request.getDateOfBirth() != null && !request.getDateOfBirth().equals(user.getDateOfBirth())) {
+            user.setDateOfBirth(request.getDateOfBirth());
+        }
+
+        user = userRepository.save(user);
+
+        return userMapper.toUserResponse(user);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -92,6 +107,4 @@ public class UserService {
         log.info("Getting current user id {}", user.getId());
         return user.getId();
     }
-
-
 }

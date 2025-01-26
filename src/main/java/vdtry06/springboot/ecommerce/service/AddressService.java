@@ -82,12 +82,14 @@ public class AddressService {
 
         if(address == null) throw new AppException(ErrorCode.ADDRESS_NOT_EXISTED);
 
-        if(request.getStreet() != null) address.setStreet(request.getStreet());
-        if(request.getHouseNumber() != null) address.setHouseNumber(request.getHouseNumber());
-        if(request.getZipCode() != null) address.setZipCode(request.getZipCode());
+        if(request.getStreet() != null && !address.getStreet().equals(request.getStreet())) address.setStreet(request.getStreet());
+        if(request.getHouseNumber() != null && !address.getHouseNumber().equals(request.getHouseNumber())) address.setHouseNumber(request.getHouseNumber());
+        if(request.getZipCode() != null && !address.getZipCode().equals(request.getZipCode())) address.setZipCode(request.getZipCode());
 
         log.info("Address updated for user {}: {}", userId, address);
-        return addressMapper.toAddressResponse(addressRepository.save(address));
+
+        address = addressRepository.save(address);
+        return addressMapper.toAddressResponse(address);
     }
 
     private Long getCurrentUserId() {

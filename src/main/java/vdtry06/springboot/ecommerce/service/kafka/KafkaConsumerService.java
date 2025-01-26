@@ -16,7 +16,7 @@ public class KafkaConsumerService {
     EmailService emailService;
 
     @KafkaListener(topics = "verification-codes")
-    public void listenVerificationCodes(ConsumerRecord<String, String> record) {
+    public void listen(ConsumerRecord<String, String> record) {
         String[] data = record.value().split(",");
         String email = data[0];
         String verificationCode = data[1];

@@ -13,7 +13,7 @@ This mvc is responsible for:
 * DBMS: MySQL
 * Kafka, zookeeper
 * jwt, oauth2
-* ...
+* thymeleaf
 
 ## Prerequisites
 * Java SDK 21

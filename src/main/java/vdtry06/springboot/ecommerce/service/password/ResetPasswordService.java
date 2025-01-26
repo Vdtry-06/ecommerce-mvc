@@ -20,6 +20,7 @@ import vdtry06.springboot.ecommerce.service.kafka.KafkaProducerService;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -30,15 +31,16 @@ public class ResetPasswordService {
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
     KafkaProducerService kafkaProducerService;
+    ConcurrentHashMap<String, String> emailVerificationMap = new ConcurrentHashMap<>();
+
 
     public RegisterUserResponse sendEmail(SendEmailRequest request) {
-
         var user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_FOUND));
 
-        user.setEnabled(false);
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationExpiration(LocalDateTime.now().plusMinutes(15));
+        emailVerificationMap.put(request.getEmail(), user.getVerificationCode());
 
         sendVerificationEmail(user);
         user = userRepository.save(user);
@@ -46,18 +48,26 @@ public class ResetPasswordService {
         return userMapper.toRegisterUserResponse(user);
     }
 
+
     public UserResponse verifyCodeAndResetPassword(ResetPassword request) {
+
+        String sentVerificationCode = emailVerificationMap.get(request.getEmail());
+
+        if(sentVerificationCode == null) {
+            throw new AppException(ErrorCode.EMAIL_INVALID);
+        }
+
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_FOUND));
 
-        if (user.getVerificationExpiration().isBefore(LocalDateTime.now())) {
+        if(user.getVerificationExpiration().isBefore(LocalDateTime.now())) {
             throw new AppException(ErrorCode.CODE_EXPIRED);
         }
-        if (!user.getVerificationCode().equals(request.getVerificationCode())) {
+        if(!user.getVerificationCode().equals(request.getVerificationCode())) {
             throw new AppException(ErrorCode.INVALID_CODE);
         }
 
-        if (!Objects.equals(request.getConfirmPassword(), request.getNewPassword())) {
+        if(!Objects.equals(request.getConfirmPassword(), request.getNewPassword())) {
             throw new AppException(ErrorCode.PASSWORD_MISMATCH);
         }
 
@@ -65,9 +75,9 @@ public class ResetPasswordService {
 
         user.setVerificationCode(null);
         user.setVerificationExpiration(null);
-        user.setEnabled(true);
-
         user = userRepository.save(user);
+
+        emailVerificationMap.remove(request.getEmail());
 
         return userMapper.toUserResponse(user);
     }

@@ -8,21 +8,25 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
 @Service
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class EmailService {
-    JavaMailSender emailSender;
+    JavaMailSender mailSender;
+    TemplateEngine templateEngine;
 
-    public void sendVerificationEmail(String to, String subject, String text) throws MessagingException {
-        MimeMessage message = emailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true);
-
+    public void sendVerificationEmail(String to, String subject, String verificationCode) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        Context context = new Context();
+        context.setVariable("verificationCode", verificationCode);
+        String htmlContent = templateEngine.process("confirm-email", context);
         helper.setTo(to);
         helper.setSubject(subject);
-        helper.setText(text, true);
-
-        emailSender.send(message);
+        helper.setText(htmlContent, true);
+        mailSender.send(message);
     }
 }
