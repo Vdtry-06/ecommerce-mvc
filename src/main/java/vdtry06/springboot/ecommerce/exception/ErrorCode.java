@@ -33,7 +33,12 @@ public enum ErrorCode {
     PASSWORD_MISMATCH(1023, "Passwords do not match", HttpStatus.BAD_REQUEST),
     EMAIL_NOT_FOUND(1024, "Email not found", HttpStatus.BAD_REQUEST),
     CATEGORY_NOT_EXISTED(1025, "Category not exists", HttpStatus.BAD_REQUEST),
-    CATEGORY_NAME_EXISTS(1026, "Category name already exists", HttpStatus.BAD_REQUEST),;
+    CATEGORY_NAME_EXISTS(1026, "Category name already exists", HttpStatus.BAD_REQUEST),
+    PRODUCT_NAME_EXISTS(1027, "Product name already exists", HttpStatus.BAD_REQUEST),
+    NEGATIVE_PRICE(1028, "price must be greater than or equal to 0", HttpStatus.BAD_REQUEST),
+    PRODUCT_NOT_FOUND(1029, "Product not found", HttpStatus.NOT_FOUND),
+    NEGATIVE_QUANTITY(1030, "Negative quantity", HttpStatus.BAD_REQUEST),
+    ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
         this.code = code;

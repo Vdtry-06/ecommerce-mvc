@@ -35,6 +35,7 @@ public class CategoryService {
         return categoryMapper.toCategoryResponse(category);
     }
 
+    // Add a warning for the product.
     @PreAuthorize("hasRole('ADMIN')")
     public CategoryResponse updateCategory(Long id, CategoryRequest request) {
         Category category = categoryRepository.findById(id)
@@ -59,6 +60,7 @@ public class CategoryService {
     }
 
 
+    // pagination
     @PreAuthorize("hasRole('ADMIN')")
     public List<CategoryResponse> getAllCategories() {
         return categoryRepository.findAll().stream()

@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @AllArgsConstructor
@@ -22,5 +23,5 @@ public class Category {
     String description;
 
     @ManyToMany(mappedBy = "categories")
-    List<Product> products;
+    Set<Product> products;
 }
