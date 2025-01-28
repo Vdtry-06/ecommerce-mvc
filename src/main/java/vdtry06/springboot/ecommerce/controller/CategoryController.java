@@ -6,8 +6,8 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import vdtry06.springboot.ecommerce.dto.ApiResponse;
-import vdtry06.springboot.ecommerce.dto.request.category.CategoryRequest;
-import vdtry06.springboot.ecommerce.dto.response.category.CategoryResponse;
+import vdtry06.springboot.ecommerce.dto.request.CategoryRequest;
+import vdtry06.springboot.ecommerce.dto.response.CategoryResponse;
 import vdtry06.springboot.ecommerce.service.CategoryService;
 
 import java.util.List;

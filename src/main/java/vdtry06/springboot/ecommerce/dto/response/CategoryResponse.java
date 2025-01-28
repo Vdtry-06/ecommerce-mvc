@@ -1,4 +1,4 @@
-package vdtry06.springboot.ecommerce.dto.request.address;
+package vdtry06.springboot.ecommerce.dto.response;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -8,10 +8,8 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AddressRequest {
-
-    String street;
-    String houseNumber;
-    String zipCode;
-
+public class CategoryResponse {
+    Long id;
+    String name;
+    String description;
 }

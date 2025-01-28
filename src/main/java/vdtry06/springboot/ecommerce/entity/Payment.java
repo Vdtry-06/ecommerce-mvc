@@ -3,6 +3,14 @@ package vdtry06.springboot.ecommerce.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import vdtry06.springboot.ecommerce.constant.PaymentMethod;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+import static jakarta.persistence.EnumType.STRING;
 
 @Entity
 @Getter
@@ -17,14 +25,19 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    String reference;
-    double amount;
-    String status;
+    BigDecimal amount;
 
-    @OneToOne(mappedBy = "payment")
-    Order order;
+    @Enumerated(STRING)
+    PaymentMethod paymentMethod;
 
-    @OneToOne(mappedBy = "payment")
-    Notification notification;
+    Long orderId;
+
+    @CreatedDate
+    @Column(updatable = false, nullable = false)
+    LocalDateTime createdDate;
+
+    @LastModifiedDate
+    @Column(insertable = false)
+    LocalDateTime lastModifiedDate;
 
 }

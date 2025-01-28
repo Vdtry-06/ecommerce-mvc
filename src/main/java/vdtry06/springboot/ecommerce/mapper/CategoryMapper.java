@@ -1,8 +1,8 @@
 package vdtry06.springboot.ecommerce.mapper;
 
 import org.mapstruct.Mapper;
-import vdtry06.springboot.ecommerce.dto.request.category.CategoryRequest;
-import vdtry06.springboot.ecommerce.dto.response.category.CategoryResponse;
+import vdtry06.springboot.ecommerce.dto.request.CategoryRequest;
+import vdtry06.springboot.ecommerce.dto.response.CategoryResponse;
 import vdtry06.springboot.ecommerce.entity.Category;
 
 @Mapper(componentModel = "spring")

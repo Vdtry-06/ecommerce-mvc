@@ -6,8 +6,8 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import vdtry06.springboot.ecommerce.dto.ApiResponse;
-import vdtry06.springboot.ecommerce.dto.request.product.ProductRequest;
-import vdtry06.springboot.ecommerce.dto.response.product.ProductResponse;
+import vdtry06.springboot.ecommerce.dto.request.ProductRequest;
+import vdtry06.springboot.ecommerce.dto.response.ProductResponse;
 import vdtry06.springboot.ecommerce.service.ProductService;
 
 import java.util.List;

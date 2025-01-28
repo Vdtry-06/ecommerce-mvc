@@ -1,8 +1,7 @@
-package vdtry06.springboot.ecommerce.dto.request.product;
+package vdtry06.springboot.ecommerce.dto.response;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import vdtry06.springboot.ecommerce.entity.Category;
 
 import java.util.Set;
 
@@ -11,10 +10,11 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ProductRequest {
+public class ProductResponse {
+    Long id;
     String name;
     String description;
     Integer availableQuantity;
     Double price;
-    Set<String> categoryNames;
+    Set<CategoryResponse> categories;
 }

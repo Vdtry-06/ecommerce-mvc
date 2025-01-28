@@ -16,15 +16,11 @@ public class OrderLine {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
-    int quantity;
 
     @ManyToOne
     @JoinColumn(name = "order_id")
     Order order;
 
-    @ManyToOne
-    @JoinColumn(name = "product_id")
-    Product product;
-
-
+    Long productId;
+    Integer quantity;
 }
