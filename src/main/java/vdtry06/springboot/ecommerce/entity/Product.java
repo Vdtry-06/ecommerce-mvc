@@ -22,8 +22,8 @@ public class Product {
 
     String name;
     String description;
-    int availableQuantity;
-    double price;
+    Double availableQuantity;
+    Double price;
 
     @ManyToMany
     @JoinTable(

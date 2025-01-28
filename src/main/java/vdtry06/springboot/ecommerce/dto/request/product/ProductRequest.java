@@ -14,7 +14,7 @@ import java.util.Set;
 public class ProductRequest {
     String name;
     String description;
-    Integer availableQuantity;
+    Double availableQuantity;
     Double price;
     Set<String> categoryNames;
 }

@@ -16,7 +16,6 @@ public class OrderLine {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
-    int quantity;
 
     @ManyToOne
     @JoinColumn(name = "order_id")
@@ -26,5 +25,5 @@ public class OrderLine {
     @JoinColumn(name = "product_id")
     Product product;
 
-
+    Double quantity;
 }

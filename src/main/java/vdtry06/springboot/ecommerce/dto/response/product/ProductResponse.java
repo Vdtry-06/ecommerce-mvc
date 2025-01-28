@@ -15,7 +15,7 @@ public class ProductResponse {
     Long id;
     String name;
     String description;
-    Integer availableQuantity;
+    Double availableQuantity;
     Double price;
     Set<CategoryResponse> categories;
 }
