@@ -25,6 +25,4 @@ public class OrderLine {
     @ManyToOne
     @JoinColumn(name = "product_id")
     Product product;
-
-
 }

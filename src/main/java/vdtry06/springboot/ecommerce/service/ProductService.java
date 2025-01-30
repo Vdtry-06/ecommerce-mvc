@@ -16,6 +16,7 @@ import vdtry06.springboot.ecommerce.mapper.ProductMapper;
 import vdtry06.springboot.ecommerce.repository.CategoryRepository;
 import vdtry06.springboot.ecommerce.repository.ProductRepository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,7 +38,8 @@ public class ProductService {
         if(request.getAvailableQuantity() < 0) {
             throw new AppException(ErrorCode.NEGATIVE_QUANTITY);
         }
-        if(request.getPrice() < 0) {
+        BigDecimal price = request.getPrice();
+        if (price.compareTo(BigDecimal.ZERO) < 0) {
             throw new AppException(ErrorCode.NEGATIVE_PRICE);
         }
         Set<Category> categories = request.getCategoryNames().stream()
@@ -69,7 +71,8 @@ public class ProductService {
             product.setAvailableQuantity(Math.max(request.getAvailableQuantity(), 0));
         }
         if(request.getPrice() != null) {
-            if(request.getPrice() < 0) {
+            BigDecimal price = request.getPrice();
+            if (price.compareTo(BigDecimal.ZERO) < 0) {
                 throw new AppException(ErrorCode.NEGATIVE_PRICE);
             }
             product.setPrice(request.getPrice());

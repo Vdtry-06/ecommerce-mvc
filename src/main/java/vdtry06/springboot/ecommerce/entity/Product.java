@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
@@ -22,8 +23,8 @@ public class Product {
 
     String name;
     String description;
-    int availableQuantity;
-    double price;
+    Double availableQuantity;
+    BigDecimal price;
 
     @ManyToMany
     @JoinTable(

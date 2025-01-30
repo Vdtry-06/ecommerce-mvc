@@ -4,6 +4,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import vdtry06.springboot.ecommerce.entity.Category;
 
+import java.math.BigDecimal;
 import java.util.Set;
 
 @Data
@@ -14,7 +15,7 @@ import java.util.Set;
 public class ProductRequest {
     String name;
     String description;
-    Integer availableQuantity;
-    Double price;
+    Double availableQuantity;
+    BigDecimal price;
     Set<String> categoryNames;
 }

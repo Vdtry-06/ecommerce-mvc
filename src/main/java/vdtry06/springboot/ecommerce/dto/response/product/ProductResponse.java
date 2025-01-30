@@ -4,6 +4,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import vdtry06.springboot.ecommerce.dto.response.category.CategoryResponse;
 
+import java.math.BigDecimal;
 import java.util.Set;
 
 @Data
@@ -15,7 +16,7 @@ public class ProductResponse {
     Long id;
     String name;
     String description;
-    Integer availableQuantity;
-    Double price;
+    Double availableQuantity;
+    BigDecimal price;
     Set<CategoryResponse> categories;
 }
