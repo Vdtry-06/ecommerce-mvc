@@ -1,12 +1,15 @@
 package vdtry06.springboot.ecommerce.controller;
 
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import vdtry06.springboot.ecommerce.dto.ApiResponse;
+import vdtry06.springboot.ecommerce.dto.request.product.ProductPurchaseRequest;
 import vdtry06.springboot.ecommerce.dto.request.product.ProductRequest;
+import vdtry06.springboot.ecommerce.dto.response.product.ProductPurchaseResponse;
 import vdtry06.springboot.ecommerce.dto.response.product.ProductResponse;
 import vdtry06.springboot.ecommerce.service.ProductService;
 
@@ -57,6 +60,14 @@ public class ProductController {
         productService.deleteProduct(id);
         return ApiResponse.<String>builder()
                 .data(String.format("Product with id %s deleted", id))
+                .build();
+    }
+
+    @PostMapping("/purchase")
+    public ApiResponse<List<ProductPurchaseResponse>> purchaseProduct(@RequestBody @Valid List<ProductPurchaseRequest> request) {
+        List<ProductPurchaseResponse> productPurchaseResponses = productService.purchaseProducts(request);
+        return ApiResponse.<List<ProductPurchaseResponse>>builder()
+                .data(productPurchaseResponses)
                 .build();
     }
 

@@ -6,8 +6,11 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import vdtry06.springboot.ecommerce.dto.request.product.ProductPurchaseRequest;
 import vdtry06.springboot.ecommerce.dto.request.product.ProductRequest;
 import vdtry06.springboot.ecommerce.dto.response.product.ProductResponse;
+import vdtry06.springboot.ecommerce.dto.response.product.ProductPurchaseResponse;
 import vdtry06.springboot.ecommerce.entity.Category;
 import vdtry06.springboot.ecommerce.entity.Product;
 import vdtry06.springboot.ecommerce.exception.AppException;
@@ -17,6 +20,8 @@ import vdtry06.springboot.ecommerce.repository.CategoryRepository;
 import vdtry06.springboot.ecommerce.repository.ProductRepository;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -107,5 +112,45 @@ public class ProductService {
             throw new AppException(ErrorCode.PRODUCT_NOT_FOUND);
         }
         productRepository.deleteById(id);
+    }
+
+    @Transactional(rollbackFor = AppException.class)
+    public List<ProductPurchaseResponse> purchaseProducts(List<ProductPurchaseRequest> request) {
+        // 1. Danh sách yêu cầu mua sản phẩm
+        var productIds = request
+                .stream()
+                .map(ProductPurchaseRequest::getProductId)
+                .toList();
+
+        var storedProducts = productRepository.findAllByIdInOrderById(productIds);
+
+        // 2. Kiểm tra tính hợp lệ của sản phẩm
+        if(productIds.size() != storedProducts.size()) {
+            throw new AppException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
+
+        // sắp xếp list theo yêu cầu để khớp với danh sách storedRequest
+        var sortedRequest = request
+                .stream()
+                .sorted(Comparator.comparing(ProductPurchaseRequest::getProductId))
+                .toList();
+        var purchasedProducts = new ArrayList<ProductPurchaseResponse>();
+
+        for(int i = 0; i < storedProducts.size(); i++) {
+            var product = storedProducts.get(i);
+            var productRequest = sortedRequest.get(i);
+
+            // 3. cập nhật số lượng hàng tồn kho cho từng sản phẩm
+            if(product.getAvailableQuantity() < productRequest.getQuantity()) {
+                throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
+            }
+            var newAvailableQuantity = product.getAvailableQuantity() - productRequest.getQuantity();
+            product.setAvailableQuantity(newAvailableQuantity);
+            productRepository.save(product);
+
+            // 4. Tạo danh sách phản hồi hoặc hoàn tác giao dịch nếu có lỗi xảy ra
+            purchasedProducts.add(productMapper.toProductPurchaseResponse(product, productRequest.getQuantity()));
+        }
+        return purchasedProducts;
     }
 }

@@ -1,6 +1,7 @@
 package vdtry06.springboot.ecommerce.service;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -106,5 +107,10 @@ public class UserService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         log.info("Getting current user id {}", user.getId());
         return user.getId();
+    }
+
+    public Optional<UserResponse> findUserById(Long id) {
+        return userRepository.findUserById(id)
+                .map(userMapper::toUserResponse); // Sử dụng mapper để chuyển đổi
     }
 }

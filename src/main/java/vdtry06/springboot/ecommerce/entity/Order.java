@@ -3,9 +3,12 @@ package vdtry06.springboot.ecommerce.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import vdtry06.springboot.ecommerce.constant.PaymentMethod;
 
-import java.util.Date;
+import java.math.BigDecimal;
 import java.util.List;
+
+import static jakarta.persistence.EnumType.STRING;
 
 @Entity
 @Getter
@@ -20,8 +23,13 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    Date orderDate;
+    @Column(unique = true, nullable = false)
     String reference;
+
+    BigDecimal totalAmount;
+
+    @Enumerated(STRING)
+    PaymentMethod paymentMethod;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
@@ -38,4 +46,17 @@ public class Order {
     @JoinColumn(name = "notification_id", referencedColumnName = "id")
     Notification notification;
 
+    @Override
+    public String toString() {
+        return "Order{" +
+                "id=" + id +
+                ", reference='" + reference + '\'' +
+                ", totalAmount=" + totalAmount +
+                ", paymentMethod=" + paymentMethod +
+                ", user=" + user +
+                ", orderLines=" + orderLines +
+                ", payment=" + payment +
+                ", notification=" + notification +
+                '}';
+    }
 }

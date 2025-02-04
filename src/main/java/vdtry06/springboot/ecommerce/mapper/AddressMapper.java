@@ -2,7 +2,6 @@ package vdtry06.springboot.ecommerce.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 import vdtry06.springboot.ecommerce.dto.request.address.AddressRequest;
 import vdtry06.springboot.ecommerce.dto.response.address.AddressResponse;
 import vdtry06.springboot.ecommerce.entity.Address;

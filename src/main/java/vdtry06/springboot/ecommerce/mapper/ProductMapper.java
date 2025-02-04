@@ -4,6 +4,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import vdtry06.springboot.ecommerce.dto.request.product.ProductRequest;
 import vdtry06.springboot.ecommerce.dto.response.product.ProductResponse;
+import vdtry06.springboot.ecommerce.dto.response.product.ProductPurchaseResponse;
 import vdtry06.springboot.ecommerce.entity.Product;
 
 @Mapper(componentModel = "spring")
@@ -12,4 +13,6 @@ public interface ProductMapper {
 
     @Mapping(target = "categories", source = "categories")
     ProductResponse toProductResponse(Product product);
+
+    ProductPurchaseResponse toProductPurchaseResponse(Product product, Double quantity);
 }
