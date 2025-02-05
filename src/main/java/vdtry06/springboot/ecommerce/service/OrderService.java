@@ -13,7 +13,6 @@ import vdtry06.springboot.ecommerce.dto.request.product.ProductPurchaseRequest;
 import vdtry06.springboot.ecommerce.dto.response.order.OrderConfirmation;
 import vdtry06.springboot.ecommerce.dto.response.order.OrderResponse;
 import vdtry06.springboot.ecommerce.dto.response.product.ProductPurchaseResponse;
-import vdtry06.springboot.ecommerce.dto.response.user.UserResponse;
 import vdtry06.springboot.ecommerce.entity.Order;
 import vdtry06.springboot.ecommerce.exception.AppException;
 import vdtry06.springboot.ecommerce.exception.ErrorCode;
@@ -22,8 +21,7 @@ import vdtry06.springboot.ecommerce.mapper.PaymentMapper;
 import vdtry06.springboot.ecommerce.mapper.UserMapper;
 import vdtry06.springboot.ecommerce.repository.OrderRepository;
 import vdtry06.springboot.ecommerce.repository.UserRepository;
-import vdtry06.springboot.ecommerce.service.kafka.OrderProducer;
-
+import vdtry06.springboot.ecommerce.service.kafka.KafkaProducerService;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,12 +33,12 @@ public class OrderService {
     OrderRepository orderRepository;
     OrderMapper orderMapper;
     OrderLineService orderLineService;
-    OrderProducer orderProducer;
     UserRepository userRepository;
     ProductService productService;
     PaymentService paymentService;
     PaymentMapper paymentMapper;
     UserMapper userMapper;
+    KafkaProducerService kafkaProducerService;
 
 
     @Transactional
@@ -93,7 +91,7 @@ public class OrderService {
                 .products(purchaseProducts)
                 .build();
         log.info("Create Order Response: {}", orderConfirmation);
-        orderProducer.sendOrderConfirmation(orderConfirmation);
+        kafkaProducerService.sendOrderConfirmation("order-topic", orderConfirmation);
 
         // Trả về phản hồi đơn hàng
         OrderResponse orderResponse = OrderResponse.builder()

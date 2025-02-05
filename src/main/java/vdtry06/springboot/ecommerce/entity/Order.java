@@ -3,9 +3,12 @@ package vdtry06.springboot.ecommerce.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import vdtry06.springboot.ecommerce.constant.PaymentMethod;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static jakarta.persistence.EnumType.STRING;
@@ -45,6 +48,24 @@ public class Order {
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "notification_id", referencedColumnName = "id")
     Notification notification;
+
+    @CreatedDate
+    @Column(updatable = false, nullable = false)
+    LocalDateTime createdDate;
+
+    @LastModifiedDate
+    @Column(insertable = false)
+    LocalDateTime lastModifiedDate;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdDate = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.lastModifiedDate = LocalDateTime.now();
+    }
 
     @Override
     public String toString() {

@@ -5,8 +5,6 @@ import lombok.experimental.FieldDefaults;
 import vdtry06.springboot.ecommerce.constant.PaymentMethod;
 import vdtry06.springboot.ecommerce.dto.response.product.ProductPurchaseResponse;
 import vdtry06.springboot.ecommerce.dto.response.user.UserResponse;
-import vdtry06.springboot.ecommerce.entity.Product;
-import vdtry06.springboot.ecommerce.entity.User;
 
 import java.math.BigDecimal;
 import java.util.List;

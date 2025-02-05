@@ -9,7 +9,7 @@ import vdtry06.springboot.ecommerce.dto.request.notification.NotificationRequest
 import vdtry06.springboot.ecommerce.dto.request.payment.PaymentRequest;
 import vdtry06.springboot.ecommerce.mapper.PaymentMapper;
 import vdtry06.springboot.ecommerce.repository.PaymentRepository;
-import vdtry06.springboot.ecommerce.service.kafka.NotificationProducer;
+import vdtry06.springboot.ecommerce.service.kafka.KafkaProducerService;
 
 @Service
 @RequiredArgsConstructor
@@ -18,7 +18,7 @@ import vdtry06.springboot.ecommerce.service.kafka.NotificationProducer;
 public class PaymentService {
     PaymentRepository paymentRepository;
     PaymentMapper paymentMapper;
-    NotificationProducer notificationProducer;
+    KafkaProducerService kafkaProducerService;
 
     public Long createPayment(PaymentRequest request) {
         var payment = paymentRepository.save(paymentMapper.toPayment(request));
@@ -32,7 +32,7 @@ public class PaymentService {
                 .userEmail(request.getUser().getEmail())
                 .build();
 
-        notificationProducer.sendNotification(notificationRequest);
+        kafkaProducerService.sendNotification("payment-topic", notificationRequest);
         return payment.getId();
     }
 }

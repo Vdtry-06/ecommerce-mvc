@@ -19,45 +19,36 @@ import java.util.Map;
 @EnableKafka
 public class KafkaProducerConfig {
 
-    @Bean
-    public ProducerFactory<String, String> producerFactory() {
+    private static final String BOOTSTRAP_SERVERS = "localhost:9092";
+
+    private <T> ProducerFactory<String, T> createProducerFactory(Class<T> valueClass) {
         Map<String, Object> configProps = new HashMap<>();
-        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        if (valueClass.equals(String.class)) {
+            configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        } else {
+            configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        }
         return new DefaultKafkaProducerFactory<>(configProps);
+    }
+
+    private <T> KafkaTemplate<String, T> createKafkaTemplate(ProducerFactory<String, T> producerFactory) {
+        return new KafkaTemplate<>(producerFactory);
     }
 
     @Bean
     public KafkaTemplate<String, String> kafkaTemplate() {
-        return new KafkaTemplate<>(producerFactory());
-    }
-
-    @Bean
-    public ProducerFactory<String, OrderConfirmation> orderProducerFactory() {
-        Map<String, Object> configProps = new HashMap<>();
-        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-        configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
-        return new DefaultKafkaProducerFactory<>(configProps);
+        return createKafkaTemplate(createProducerFactory(String.class));
     }
 
     @Bean
     public KafkaTemplate<String, OrderConfirmation> orderKafkaTemplate() {
-        return new KafkaTemplate<>(orderProducerFactory());
-    }
-
-    @Bean
-    public ProducerFactory<String, NotificationRequest> notificationProducerFactory() {
-        Map<String, Object> configProps = new HashMap<>();
-        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-        configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
-        return new DefaultKafkaProducerFactory<>(configProps);
+        return createKafkaTemplate(createProducerFactory(OrderConfirmation.class));
     }
 
     @Bean
     public KafkaTemplate<String, NotificationRequest> notificationKafkaTemplate() {
-        return new KafkaTemplate<>(notificationProducerFactory());
+        return createKafkaTemplate(createProducerFactory(NotificationRequest.class));
     }
 }

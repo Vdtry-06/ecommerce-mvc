@@ -8,19 +8,17 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
-import vdtry06.springboot.ecommerce.entity.Product;
+import vdtry06.springboot.ecommerce.dto.response.product.ProductPurchaseResponse;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static vdtry06.springboot.ecommerce.service.email.EmailTemplates.ORDER_CONFIRMATION;
-import static vdtry06.springboot.ecommerce.service.email.EmailTemplates.PAYMENT_CONFIRMATION;
+import static vdtry06.springboot.ecommerce.service.email.EmailTemplates.*;
 
 
 @Service
@@ -31,19 +29,18 @@ public class EmailService {
     JavaMailSender mailSender;
     TemplateEngine templateEngine;
 
-    public void sendVerificationEmail(String to, String subject, String verificationCode) throws MessagingException {
+    public void sendVerificationEmail(String to, String verificationCode) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
         Context context = new Context();
         context.setVariable("verificationCode", verificationCode);
-        String htmlContent = templateEngine.process("confirm-email", context);
+        String htmlContent = templateEngine.process(EmailTemplates.EMAIL_VERIFICATION.getTemplate(), context);
         helper.setTo(to);
-        helper.setSubject(subject);
+        helper.setSubject(EmailTemplates.EMAIL_VERIFICATION.getSubject());
         helper.setText(htmlContent, true);
         mailSender.send(message);
     }
 
-    @Async
     public void sendPaymentSuccessEmail(
             String destinationEmail,
             String username,
@@ -53,6 +50,7 @@ public class EmailService {
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
         messageHelper.setFrom("tunhoipro0306@gmail.com");
+
         String templateName = PAYMENT_CONFIRMATION.getTemplate();
 
         Map<String, Object> variables = new HashMap<>();
@@ -76,13 +74,12 @@ public class EmailService {
         }
     }
 
-    @Async
     public void sendOrderConfirmationEmail(
             String destinationEmail,
             String username,
             BigDecimal amount,
             String orderReference,
-            List<Product> products
+            List<ProductPurchaseResponse> products
     ) throws MessagingException {
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
