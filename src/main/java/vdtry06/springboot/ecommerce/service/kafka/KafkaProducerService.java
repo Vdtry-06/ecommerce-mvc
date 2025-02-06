@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 import vdtry06.springboot.ecommerce.dto.request.notification.NotificationRequest;
 import vdtry06.springboot.ecommerce.dto.response.order.OrderConfirmation;
@@ -22,13 +25,21 @@ public class KafkaProducerService {
         kafkaTemplate.send(topic, message);
     }
 
-    public void sendNotification(String topic, NotificationRequest request) {
+    public void sendNotification(NotificationRequest request) {
         log.info("Sending notification request: {}", request);
-        notificationKafkaTemplate.send(topic, request);
+        Message<NotificationRequest> message = MessageBuilder
+                .withPayload(request)
+                .setHeader(KafkaHeaders.TOPIC, "payment-topic")
+                .build();
+        notificationKafkaTemplate.send(message);
     }
 
-    public void sendOrderConfirmation(String topic, OrderConfirmation orderConfirmation) {
+    public void sendOrderConfirmation(OrderConfirmation orderConfirmation) {
         log.info("Sending order confirmation: {}", orderConfirmation);
-        orderKafkaTemplate.send(topic, orderConfirmation);
+        Message<OrderConfirmation> message = MessageBuilder
+                .withPayload(orderConfirmation)
+                .setHeader(KafkaHeaders.TOPIC, "order-topic")
+                .build();
+        orderKafkaTemplate.send(message);
     }
 }

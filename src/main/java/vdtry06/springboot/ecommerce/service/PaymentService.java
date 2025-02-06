@@ -32,7 +32,7 @@ public class PaymentService {
                 .userEmail(request.getUser().getEmail())
                 .build();
 
-        kafkaProducerService.sendNotification("payment-topic", notificationRequest);
+        kafkaProducerService.sendNotification(notificationRequest);
         return payment.getId();
     }
 }

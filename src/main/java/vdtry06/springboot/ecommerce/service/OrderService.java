@@ -91,7 +91,7 @@ public class OrderService {
                 .products(purchaseProducts)
                 .build();
         log.info("Create Order Response: {}", orderConfirmation);
-        kafkaProducerService.sendOrderConfirmation("order-topic", orderConfirmation);
+        kafkaProducerService.sendOrderConfirmation(orderConfirmation);
 
         // Trả về phản hồi đơn hàng
         OrderResponse orderResponse = OrderResponse.builder()
