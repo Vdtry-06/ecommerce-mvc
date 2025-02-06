@@ -21,9 +21,15 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
+    @Column(nullable = false, unique = true)
     String name;
+
+    @Column(columnDefinition = "TEXT")
     String description;
-    Double availableQuantity;
+
+    @Column(nullable = false)
+    Integer availableQuantity;
+
     BigDecimal price;
 
     @ManyToMany
@@ -34,6 +40,6 @@ public class Product {
     )
     Set<Category> categories;
 
-    @OneToMany(mappedBy = "product")
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     List<OrderLine> orderLines;
 }

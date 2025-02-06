@@ -73,7 +73,7 @@ public class ProductService {
             product.setDescription(request.getDescription());
         }
         if(request.getAvailableQuantity() != null) {
-            product.setAvailableQuantity(Math.max(request.getAvailableQuantity(), 0));
+            product.setAvailableQuantity((int) Math.max(request.getAvailableQuantity(), 0));
         }
         if(request.getPrice() != null) {
             BigDecimal price = request.getPrice();
@@ -112,45 +112,5 @@ public class ProductService {
             throw new AppException(ErrorCode.PRODUCT_NOT_FOUND);
         }
         productRepository.deleteById(id);
-    }
-
-    @Transactional(rollbackFor = AppException.class)
-    public List<ProductPurchaseResponse> purchaseProducts(List<ProductPurchaseRequest> request) {
-        // 1. Danh sách yêu cầu mua sản phẩm
-        var productIds = request
-                .stream()
-                .map(ProductPurchaseRequest::getProductId)
-                .toList();
-
-        var storedProducts = productRepository.findAllByIdInOrderById(productIds);
-
-        // 2. Kiểm tra tính hợp lệ của sản phẩm
-        if(productIds.size() != storedProducts.size()) {
-            throw new AppException(ErrorCode.PRODUCT_NOT_FOUND);
-        }
-
-        // sắp xếp list theo yêu cầu để khớp với danh sách storedRequest
-        var sortedRequest = request
-                .stream()
-                .sorted(Comparator.comparing(ProductPurchaseRequest::getProductId))
-                .toList();
-        var purchasedProducts = new ArrayList<ProductPurchaseResponse>();
-
-        for(int i = 0; i < storedProducts.size(); i++) {
-            var product = storedProducts.get(i);
-            var productRequest = sortedRequest.get(i);
-
-            // 3. cập nhật số lượng hàng tồn kho cho từng sản phẩm
-            if(product.getAvailableQuantity() < productRequest.getQuantity()) {
-                throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
-            }
-            var newAvailableQuantity = product.getAvailableQuantity() - productRequest.getQuantity();
-            product.setAvailableQuantity(newAvailableQuantity);
-            productRepository.save(product);
-
-            // 4. Tạo danh sách phản hồi hoặc hoàn tác giao dịch nếu có lỗi xảy ra
-            purchasedProducts.add(productMapper.toProductPurchaseResponse(product, productRequest.getQuantity()));
-        }
-        return purchasedProducts;
     }
 }

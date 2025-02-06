@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import vdtry06.springboot.ecommerce.constant.OrderStatus;
 import vdtry06.springboot.ecommerce.constant.PaymentMethod;
 
 import java.math.BigDecimal;
@@ -26,27 +27,26 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @Column(unique = true, nullable = false)
-    String reference;
+    String username;
+    String email;
 
-    BigDecimal totalAmount;
+    @Enumerated(EnumType.STRING)
+    private OrderStatus status;
 
-    @Enumerated(STRING)
-    PaymentMethod paymentMethod;
+    BigDecimal totalPrice;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
     User user;
 
-    @OneToMany(mappedBy = "order")
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     List<OrderLine> orderLines;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne
     @JoinColumn(name = "payment_id", referencedColumnName = "id")
     Payment payment;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "notification_id", referencedColumnName = "id")
+    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     Notification notification;
 
     @CreatedDate
@@ -65,19 +65,5 @@ public class Order {
     @PreUpdate
     protected void onUpdate() {
         this.lastModifiedDate = LocalDateTime.now();
-    }
-
-    @Override
-    public String toString() {
-        return "Order{" +
-                "id=" + id +
-                ", reference='" + reference + '\'' +
-                ", totalAmount=" + totalAmount +
-                ", paymentMethod=" + paymentMethod +
-                ", user=" + user +
-                ", orderLines=" + orderLines +
-                ", payment=" + payment +
-                ", notification=" + notification +
-                '}';
     }
 }

@@ -39,8 +39,11 @@ public enum ErrorCode {
     NEGATIVE_QUANTITY(1030, "Quantity cannot be negative", HttpStatus.BAD_REQUEST),
     PRODUCTS_NOT_FOUND(1031, "One or more products do not exist", HttpStatus.NOT_FOUND),
     INSUFFICIENT_STOCK(1032, "Insufficient stock quantity for product", HttpStatus.BAD_REQUEST),
-
-    ;
+    ORDER_NOT_FOUND(1033, "Order not found", HttpStatus.NOT_FOUND),
+    ORDER_LINE_NOT_FOUND(1034, "Order line not found", HttpStatus.NOT_FOUND),
+    ORDER_ALREADY_PAID(1035, "Order already paid", HttpStatus.BAD_REQUEST),
+    INVALID_ORDER_STATUS(1036, "Invalid order status", HttpStatus.BAD_REQUEST),
+    ORDER_NOT_PAID(1037, "Order not paid", HttpStatus.BAD_REQUEST),;
 
     private final int code;
     private final String message;

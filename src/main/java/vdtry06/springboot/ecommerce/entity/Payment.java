@@ -31,10 +31,7 @@ public class Payment {
     @Enumerated(STRING)
     PaymentMethod paymentMethod;
 
-    @OneToOne(mappedBy = "payment")
-    Order order;
-
-    @OneToOne(mappedBy = "payment")
+    @OneToOne(mappedBy = "payment", cascade = CascadeType.ALL)
     Notification notification;
 
     @CreatedDate

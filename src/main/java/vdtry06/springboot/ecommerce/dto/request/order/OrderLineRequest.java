@@ -9,8 +9,7 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OrderLineRequest {
-    Long id;
     Long orderId;
     Long productId;
-    Double quantity;
+    Integer quantity;
 }

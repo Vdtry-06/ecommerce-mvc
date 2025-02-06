@@ -11,7 +11,6 @@ import lombok.experimental.FieldDefaults;
 public enum EmailTemplates {
 
     PAYMENT_CONFIRMATION("payment-confirmation.html", "Payment successfully processed"),
-    ORDER_CONFIRMATION("order-confirmation.html", "Order confirmation"),
     EMAIL_VERIFICATION("confirm-email.html", "Email verification"),
     ;
     String template;

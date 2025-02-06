@@ -2,6 +2,9 @@ package vdtry06.springboot.ecommerce.dto.response.order;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import vdtry06.springboot.ecommerce.dto.response.product.ProductResponse;
+
+import java.math.BigDecimal;
 
 @Data
 @NoArgsConstructor
@@ -10,5 +13,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OrderLineResponse {
     Long id;
-    Double quantity;
+    Long productId;
+    Integer quantity;
+    BigDecimal price;
 }

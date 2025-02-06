@@ -10,7 +10,6 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 import vdtry06.springboot.ecommerce.dto.request.notification.NotificationRequest;
-import vdtry06.springboot.ecommerce.dto.response.order.OrderConfirmation;
 
 @Service
 @AllArgsConstructor
@@ -19,7 +18,6 @@ import vdtry06.springboot.ecommerce.dto.response.order.OrderConfirmation;
 public class KafkaProducerService {
     KafkaTemplate<String, String> kafkaTemplate;
     KafkaTemplate<String, NotificationRequest> notificationKafkaTemplate;
-    KafkaTemplate<String, OrderConfirmation> orderKafkaTemplate;
 
     public void sendMessage(String topic, String message) {
         kafkaTemplate.send(topic, message);
@@ -32,14 +30,5 @@ public class KafkaProducerService {
                 .setHeader(KafkaHeaders.TOPIC, "payment-topic")
                 .build();
         notificationKafkaTemplate.send(message);
-    }
-
-    public void sendOrderConfirmation(OrderConfirmation orderConfirmation) {
-        log.info("Sending order confirmation: {}", orderConfirmation);
-        Message<OrderConfirmation> message = MessageBuilder
-                .withPayload(orderConfirmation)
-                .setHeader(KafkaHeaders.TOPIC, "order-topic")
-                .build();
-        orderKafkaTemplate.send(message);
     }
 }

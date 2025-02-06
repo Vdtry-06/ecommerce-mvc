@@ -20,11 +20,16 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
+    @Enumerated(EnumType.STRING)
     NotificationType type;
+
     LocalDateTime notificationDate;
-    @OneToOne(mappedBy = "notification")
+
+    @OneToOne
+    @JoinColumn(name = "order_id", referencedColumnName = "id")
     Order order;
-    @OneToOne(cascade = CascadeType.ALL)
+
+    @OneToOne
     @JoinColumn(name = "payment_id", referencedColumnName = "id")
     Payment payment;
 }

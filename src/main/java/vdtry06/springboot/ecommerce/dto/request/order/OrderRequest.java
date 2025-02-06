@@ -18,19 +18,7 @@ import java.util.List;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OrderRequest {
-    String reference;
-
-    @Positive(message = "Order amount should be positive")
-    BigDecimal amount;
-
-    @NotNull(message = "Payment method should be precised")
-    PaymentMethod paymentMethod;
-
-    @NotNull(message = "Customer should be present")
-    @NotEmpty(message = "Customer should be present")
-    @NotBlank(message = "Customer should be present")
     Long userId;
-
-    @NotEmpty(message = "You should at least purchase one product")
-    List<ProductPurchaseRequest> products;
+    List<OrderLineRequest> orderLines;
+    PaymentMethod paymentMethod;
 }

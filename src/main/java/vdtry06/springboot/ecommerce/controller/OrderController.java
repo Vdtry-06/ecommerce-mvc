@@ -1,6 +1,5 @@
 package vdtry06.springboot.ecommerce.controller;
 
-import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -11,8 +10,6 @@ import vdtry06.springboot.ecommerce.dto.request.order.OrderRequest;
 import vdtry06.springboot.ecommerce.dto.response.order.OrderResponse;
 import vdtry06.springboot.ecommerce.service.OrderService;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/orders")
 @RequiredArgsConstructor
@@ -22,24 +19,37 @@ public class OrderController {
     OrderService orderService;
 
     @PostMapping
-    public ApiResponse<OrderResponse> createOrder(@RequestBody OrderRequest request) {
+    public ApiResponse<OrderResponse> createOrder(@RequestBody OrderRequest orderRequest) {
+        OrderResponse orderResponse = orderService.createOrder(orderRequest);
         return ApiResponse.<OrderResponse>builder()
-                .data(orderService.createOrder(request))
+                .message("Order created successfully")
+                .data(orderResponse)
                 .build();
     }
 
-    @GetMapping
-    public ApiResponse<List<OrderResponse>> getAllOrders() {
-        List<OrderResponse> orderResponses = orderService.findAllOrders();
-        return ApiResponse.<List<OrderResponse>>builder()
-                .data(orderResponses)
+    @GetMapping("/{orderId}")
+    public ApiResponse<OrderResponse> getOrderById(@PathVariable Long orderId) {
+        OrderResponse orderResponse = orderService.getOrderById(orderId);
+        return ApiResponse.<OrderResponse>builder()
+                .message("Order fetched successfully")
+                .data(orderResponse)
                 .build();
     }
 
-    @GetMapping("/{order-id}")
-    public ApiResponse<OrderResponse> getOrder(@PathVariable("order-id") Long orderId) {
-        OrderResponse orderResponse = orderService.findOrderById(orderId);
+    @PutMapping("/{orderId}/status/paid")
+    public ApiResponse<OrderResponse> updateOrderStatusToPaid(@PathVariable Long orderId) {
+        OrderResponse orderResponse = orderService.updateOrderStatusToPaid(orderId);
         return ApiResponse.<OrderResponse>builder()
+                .message("Order status updated to PAID successfully")
+                .data(orderResponse)
+                .build();
+    }
+
+    @PutMapping("/{orderId}/status/delivered")
+    public ApiResponse<OrderResponse> updateOrderStatusToDelivered(@PathVariable Long orderId) {
+        OrderResponse orderResponse =  orderService.updateOrderStatusToDelivered(orderId);
+        return ApiResponse.<OrderResponse>builder()
+                .message("Order status updated to DELIVERED successfully")
                 .data(orderResponse)
                 .build();
     }
