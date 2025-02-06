@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import vdtry06.springboot.ecommerce.dto.ApiResponse;
 import vdtry06.springboot.ecommerce.dto.request.order.OrderLineRequest;
 import vdtry06.springboot.ecommerce.dto.response.order.OrderLineResponse;
-import vdtry06.springboot.ecommerce.entity.OrderLine;
 import vdtry06.springboot.ecommerce.service.OrderLineService;
 
 import java.util.List;
@@ -44,7 +43,7 @@ public class OrderLineController {
                 .build();
     }
 
-    @GetMapping
+    @GetMapping("/{orderId}")
     public ApiResponse<List<OrderLineResponse>> getOrderLines(@PathVariable Long orderId) {
         return ApiResponse.<List<OrderLineResponse>>builder()
                 .data(orderLineService.getOrderLines(orderId))
