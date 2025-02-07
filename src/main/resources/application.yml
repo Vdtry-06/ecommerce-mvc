@@ -49,9 +49,9 @@ jwt:
 
 payment:
   vnPay:
-    url: ${PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
-    tmnCode: ${TMN_CODE:XSUKKR24}
-    secretKey: ${SECRET_KEY:V4O2IMZ5FYU0RMRYTBNO0CWO94RU1DIE}
+    url: ${PAY_URL}
+    tmnCode: ${TMN_CODE}
+    secretKey: ${SECRET_KEY}
     returnUrl: ${RETURN_URL:http://localhost:8080/api/v1/payment/vn-pay-callback}
     version: ${VERSION:2.1.0}
     command: ${COMMAND:pay}
