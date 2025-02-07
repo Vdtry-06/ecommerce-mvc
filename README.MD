@@ -3,8 +3,13 @@ This mvc is responsible for:
 * Onboarding users
 * Roles and permissions
 * Authentication
-* email
-* address
+* Email verification
+* Password recovery processing
+* Ordering
+* Purchasing
+* Order confirmation
+* Searching
+* Filtering and sorting products
 
 ## Tech stack
 * Build tool: maven >= 3.9.9
