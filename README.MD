@@ -10,6 +10,7 @@ This mvc is responsible for:
 * Order confirmation
 * Searching
 * Filtering and sorting products
+* Pay with VNPay
 
 ## Tech stack
 * Build tool: maven >= 3.9.9
@@ -18,6 +19,7 @@ This mvc is responsible for:
 * DBMS: MySQL
 * Kafka, zookeeper
 * jwt, oauth2
+* api
 * thymeleaf
 
 ## Prerequisites

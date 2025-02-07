@@ -64,8 +64,7 @@ public class KafkaConsumerService {
                     paymentConfirmation.getOrderReference(),
                     paymentConfirmation.getAmount(),
                     paymentConfirmation.getPaymentMethod(),
-                    paymentConfirmation.getUserFirstName(),
-                    paymentConfirmation.getUserLastName(),
+                    paymentConfirmation.getUsername(),
                     paymentConfirmation.getUserEmail());
 
             Payment paymentEntity = Payment.builder()
@@ -85,7 +84,7 @@ public class KafkaConsumerService {
                             .build()
             );
 
-            String customerName = paymentConfirmation.getUserFirstName() + " " + paymentConfirmation.getUserLastName();
+            String customerName = paymentConfirmation.getUsername();
             try {
                 emailService.sendPaymentSuccessEmail(
                         paymentConfirmation.getUserEmail(),

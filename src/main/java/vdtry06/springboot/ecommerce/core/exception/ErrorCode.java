@@ -44,7 +44,9 @@ public enum ErrorCode {
     ORDER_ALREADY_PAID(1035, "Order already paid", HttpStatus.BAD_REQUEST),
     INVALID_ORDER_STATUS(1036, "Invalid order status", HttpStatus.BAD_REQUEST),
     ORDER_NOT_PAID(1037, "Order not paid", HttpStatus.BAD_REQUEST),
-    ORDER_ALREADY_CANCELLED(1038, "Order already cancelled", HttpStatus.BAD_REQUEST),;
+    ORDER_ALREADY_CANCELLED(1038, "Order already cancelled", HttpStatus.BAD_REQUEST),
+    NULL_KEY_OR_DATA(1039, "Null key or data", HttpStatus.BAD_REQUEST),
+    PAYMENT_FAILED(1040, "Payment failed", HttpStatus.BAD_REQUEST),;
 
     private final int code;
     private final String message;

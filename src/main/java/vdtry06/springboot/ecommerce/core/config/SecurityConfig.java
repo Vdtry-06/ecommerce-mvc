@@ -26,7 +26,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class SecurityConfig  {
     private static final String[] PUBLIC_ENDPOINTS = {
-        "/users", "/auth/**", "/addresses", "/orders"
+        "/users", "/auth/**", "/addresses", "/orders",
 //            "/auth/login", "/auth/introspect", "/auth/logout", "/auth/refresh", "/addresses",
     };
 
@@ -49,6 +49,8 @@ public class SecurityConfig  {
 
                 // cấu hình phân quyền public_endpoint: không cần xác thực
                 .authorizeHttpRequests(request -> request
+                        .requestMatchers(HttpMethod.GET, "/payment/vn-pay-callback")
+                        .permitAll()
                         .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS)
                         .permitAll()
                         .anyRequest()

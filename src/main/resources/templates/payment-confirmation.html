@@ -6,7 +6,7 @@
     <title>Payment Confirmation</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
             background-color: #ffffff;
             margin: 0;
             padding: 0;
@@ -14,81 +14,83 @@
         .container {
             background-color: #ffffff;
             width: 100%;
-            max-width: 360px;
+            max-width: 600px;
             margin: 0 auto;
-            padding: 15px;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             border: 1px solid #dddddd;
-            border-radius: 5px;
         }
         .header {
-            background: #007bff;
+            background: linear-gradient(135deg, #007bff, #0056b3);
             color: #ffffff;
-            padding: 12px;
-            border-radius: 5px 5px 0 0;
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
             text-align: center;
         }
         .header h2 {
             margin: 0;
-            font-size: 1.2em;
+            font-size: 1.6em;
         }
         .content {
-            padding: 10px;
+            padding: 20px;
             text-align: center;
         }
         .content p {
-            font-size: 0.9em;
-            color: #555;
-            margin-bottom: 12px;
+            font-size: 1em;
+            color: #555555;
+            margin-bottom: 20px;
         }
         .payment-details {
             background-color: #f9f9f9;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px auto;
+            padding: 15px 20px;
+            border-radius: 5px;
+            margin: 20px auto;
             text-align: center;
-            border: 1px solid #ddd;
+            border: 1px solid #dddddd;
         }
         .payment-details h3 {
-            margin: 0;
-            font-size: 1em;
-            color: #333;
+            margin: 0 0 10px;
+            font-size: 1.1em;
+            color: #333333;
         }
         .payment-details p {
-            font-size: 1.2em;
+            font-size: 1.4em;
             font-weight: bold;
             color: #007bff;
-            margin: 5px 0;
+            margin: 0;
         }
         .footer {
             text-align: center;
-            padding: 8px;
-            font-size: 0.8em;
-            color: #aaa;
+            padding: 10px;
+            font-size: 0.9em;
+            color: #aaaaaa;
             border-top: 1px solid #f0f0f0;
         }
         .footer p {
-            margin: 2px 0;
+            margin: 0;
         }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h2>Payment Confirmed</h2>
+        <h2>Payment Confirmation</h2>
     </div>
     <div class="content">
         <p>Dear <span th:text="${username}"></span>,</p>
-        <p>Your payment has been processed.</p>
+        <p>Your payment has been successfully processed.</p>
         <div class="payment-details">
-            <h3>Amount:</h3>
+            <h3>Payment Amount:</h3>
             <p>$<span th:text="${amount}"></span></p>
-            <h3>Order ID:</h3>
+            <h3>Order Reference:</h3>
             <p th:text="${orderReference}"></p>
         </div>
-        <p>Thank you for your purchase!</p>
+        <p>Thank you for choosing our service. If you have any questions, feel free to contact us.</p>
     </div>
     <div class="footer">
-        <p>&copy; 2025 Ecommerce App.</p>
+        <p>This is an automated message. Please do not reply to this email.</p>
+        <p>&copy; 2025 Ecommerce App. All rights reserved.</p>
     </div>
 </div>
 </body>

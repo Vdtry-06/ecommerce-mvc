@@ -64,7 +64,13 @@ public class OrderLineService {
 
         log.info("Add order line: {}", orderLine.getProduct().getId());
 
-        order.setTotalPrice(order.getTotalPrice().add(orderLine.getPrice()));
+        if(existingOrderLine.isPresent()) {
+            BigDecimal additionalPrice = product.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()));
+            order.setTotalPrice(order.getTotalPrice().add(additionalPrice));
+        } else {
+            order.setTotalPrice(order.getTotalPrice().add(orderLine.getPrice()));
+        }
+
         orderRepository.save(order);
 
         return orderLineMapper.toOrderLineResponse(orderLine);

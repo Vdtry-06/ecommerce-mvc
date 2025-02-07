@@ -15,7 +15,6 @@ public class NotificationRequest {
     String orderReference;
     BigDecimal amount;
     PaymentMethod paymentMethod;
-    String userFirstName;
-    String userLastName;
+    String username;
     String userEmail;
 }

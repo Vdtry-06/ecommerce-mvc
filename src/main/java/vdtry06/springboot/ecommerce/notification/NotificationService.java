@@ -39,8 +39,7 @@ public class NotificationService {
                 .orderReference(payment.getReference())
                 .amount(payment.getAmount())
                 .paymentMethod(payment.getPaymentMethod())
-                .userFirstName(user.getFirstName())
-                .userLastName(user.getLastName())
+                .username(user.getUsername())
                 .userEmail(user.getEmail())
                 .build();
 
