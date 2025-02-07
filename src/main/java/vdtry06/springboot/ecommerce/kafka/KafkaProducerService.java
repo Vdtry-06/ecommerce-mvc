@@ -9,7 +9,7 @@ import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
-import vdtry06.springboot.ecommerce.notification.NotificationRequest;
+import vdtry06.springboot.ecommerce.notification.dto.NotificationRequest;
 
 @Service
 @AllArgsConstructor

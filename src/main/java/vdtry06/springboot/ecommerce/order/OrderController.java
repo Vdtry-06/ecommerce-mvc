@@ -35,21 +35,21 @@ public class OrderController {
                 .build();
     }
 
-    @PutMapping("/{orderId}/status/paid")
-    public ApiResponse<OrderResponse> updateOrderStatusToPaid(@PathVariable Long orderId) {
-        OrderResponse orderResponse = orderService.updateOrderStatusToPaid(orderId);
-        return ApiResponse.<OrderResponse>builder()
-                .message("Order status updated to PAID successfully")
-                .data(orderResponse)
-                .build();
-    }
-
-    @PutMapping("/{orderId}/status/delivered")
-    public ApiResponse<OrderResponse> updateOrderStatusToDelivered(@PathVariable Long orderId) {
-        OrderResponse orderResponse =  orderService.updateOrderStatusToDelivered(orderId);
-        return ApiResponse.<OrderResponse>builder()
-                .message("Order status updated to DELIVERED successfully")
-                .data(orderResponse)
-                .build();
-    }
+//    @PutMapping("/{orderId}/status/paid")
+//    public ApiResponse<OrderResponse> updateOrderStatusToPaid(@PathVariable Long orderId) {
+//        OrderResponse orderResponse = orderService.updateOrderStatusToPaid(orderId);
+//        return ApiResponse.<OrderResponse>builder()
+//                .message("Order status updated to PAID successfully")
+//                .data(orderResponse)
+//                .build();
+//    }
+//
+//    @PutMapping("/{orderId}/status/delivered")
+//    public ApiResponse<OrderResponse> updateOrderStatusToDelivered(@PathVariable Long orderId) {
+//        OrderResponse orderResponse =  orderService.updateOrderStatusToDelivered(orderId);
+//        return ApiResponse.<OrderResponse>builder()
+//                .message("Order status updated to DELIVERED successfully")
+//                .data(orderResponse)
+//                .build();
+//    }
 }

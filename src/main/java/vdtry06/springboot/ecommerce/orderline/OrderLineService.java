@@ -46,10 +46,10 @@ public class OrderLineService {
         Optional<OrderLine> existingOrderLine = orderLineRepository.findByOrderIdAndProductId(request.getOrderId(), request.getProductId());
 
         OrderLine orderLine;
-        if (existingOrderLine.isPresent()) {
+        if(existingOrderLine.isPresent()) {
             orderLine = existingOrderLine.get();
             orderLine.setQuantity(orderLine.getQuantity() + request.getQuantity());
-            orderLine.setPrice(orderLine.getPrice().add(product.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()))));  // Add price
+            orderLine.setPrice(orderLine.getPrice().add(product.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()))));
             orderLineRepository.save(orderLine);
         } else {
             BigDecimal price = product.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()));

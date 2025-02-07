@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vdtry06.springboot.ecommerce.core.constant.OrderStatus;
+import vdtry06.springboot.ecommerce.core.constant.PaymentMethod;
 import vdtry06.springboot.ecommerce.payment.dto.PaymentResponse;
 import vdtry06.springboot.ecommerce.core.exception.AppException;
 import vdtry06.springboot.ecommerce.core.exception.ErrorCode;
@@ -17,6 +18,7 @@ import vdtry06.springboot.ecommerce.payment.dto.PaymentRequest;
 import vdtry06.springboot.ecommerce.product.Product;
 import vdtry06.springboot.ecommerce.order.OrderRepository;
 import vdtry06.springboot.ecommerce.product.ProductRepository;
+import vdtry06.springboot.ecommerce.user.User;
 
 import java.util.List;
 
@@ -37,33 +39,60 @@ public class PaymentService {
         Order order = orderRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
+        if(OrderStatus.PAID.equals(order.getStatus())) {
+            throw new AppException(ErrorCode.ORDER_ALREADY_PAID);
+        }
+
+//        if(OrderStatus.CANCELLED.equals(order.getStatus())) {
+//            throw new AppException(ErrorCode.ORDER_ALREADY_CANCELLED);
+//        }
+
+        PaymentMethod paymentMethod = request.getPaymentMethod();
+
         Payment payment = Payment.builder()
                 .reference(request.getOrderReference())
-                .amount(request.getAmount())
-                .paymentMethod(request.getPaymentMethod())
+                .amount(order.getTotalPrice())
+                .paymentMethod(paymentMethod)
                 .build();
 
         paymentRepository.save(payment);
-
         order.setPayment(payment);
-        order.setStatus(OrderStatus.PAID);
 
         updateProductQuantity(order, false);
 
+        if(paymentMethod == PaymentMethod.CASH_ON_DELIVERY) {
+            order.setStatus(OrderStatus.PENDING);
+        } else {
+            order.setStatus(OrderStatus.PAID);
+            User user = order.getUser();
+            if(user != null) {
+                notificationService.createPaymentNotification(user, payment);
+            } else {
+                log.warn("Order {} has no associated user, skipping notification.", order.getId());
+            }
+        }
+
         orderRepository.save(order);
-        notificationService.createPaymentNotification(payment);
 
         return paymentMapper.toPaymentResponse(payment);
     }
+
+
 
     @Transactional
     public void cancelPayment(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
+        if(OrderStatus.CANCELLED.equals(order.getStatus())) {
+            throw new AppException(ErrorCode.ORDER_ALREADY_CANCELLED);
+        }
+
         if(!OrderStatus.PAID.equals(order.getStatus())) {
             throw new AppException(ErrorCode.ORDER_NOT_PAID);
         }
+
+
 
         updateProductQuantity(order, true);
 

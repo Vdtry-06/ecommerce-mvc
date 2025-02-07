@@ -1,4 +1,4 @@
-package vdtry06.springboot.ecommerce.notification;
+package vdtry06.springboot.ecommerce.notification.dto;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

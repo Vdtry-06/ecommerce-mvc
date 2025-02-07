@@ -1,69 +1,95 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment Confirmation</title>
-
     <style>
         body {
             font-family: Arial, sans-serif;
-            line-height: 1.6;
-            background-color: #f4f4f4;
+            background-color: #ffffff;
             margin: 0;
             padding: 0;
         }
-
         .container {
-            max-width: 600px;
+            background-color: #ffffff;
+            width: 100%;
+            max-width: 360px;
             margin: 0 auto;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-
-        h1 {
-            color: #333;
-        }
-
-        p {
-            color: #555;
-        }
-
-        .button {
-            display: inline-block;
-            padding: 10px 20px;
-            text-align: center;
-            text-decoration: none;
-            color: #fff;
-            background-color: #007BFF;
+            padding: 15px;
+            border: 1px solid #dddddd;
             border-radius: 5px;
         }
-
-        .footer {
-            margin-top: 20px;
-            padding-top: 10px;
-            border-top: 1px solid #ddd;
+        .header {
+            background: #007bff;
+            color: #ffffff;
+            padding: 12px;
+            border-radius: 5px 5px 0 0;
             text-align: center;
+        }
+        .header h2 {
+            margin: 0;
+            font-size: 1.2em;
+        }
+        .content {
+            padding: 10px;
+            text-align: center;
+        }
+        .content p {
+            font-size: 0.9em;
+            color: #555;
+            margin-bottom: 12px;
+        }
+        .payment-details {
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px auto;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        .payment-details h3 {
+            margin: 0;
+            font-size: 1em;
+            color: #333;
+        }
+        .payment-details p {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #007bff;
+            margin: 5px 0;
+        }
+        .footer {
+            text-align: center;
+            padding: 8px;
+            font-size: 0.8em;
+            color: #aaa;
+            border-top: 1px solid #f0f0f0;
+        }
+        .footer p {
+            margin: 2px 0;
         }
     </style>
 </head>
-
 <body>
 <div class="container">
-    <h1>Payment Confirmation</h1>
-    <p>Dear <span th:text="${username}"></span>,</p>
-    <p>Your payment of $<span th:text="${amount}"></span> has been successfully processed.</p>
-    <p>Order reference: <span th:text="${orderReference}"></span></p>
-    <p>Thank you for choosing our service. If you have any questions, feel free to contact us.</p>
-
+    <div class="header">
+        <h2>Payment Confirmed</h2>
+    </div>
+    <div class="content">
+        <p>Dear <span th:text="${username}"></span>,</p>
+        <p>Your payment has been processed.</p>
+        <div class="payment-details">
+            <h3>Amount:</h3>
+            <p>$<span th:text="${amount}"></span></p>
+            <h3>Order ID:</h3>
+            <p th:text="${orderReference}"></p>
+        </div>
+        <p>Thank you for your purchase!</p>
+    </div>
     <div class="footer">
-        <p>This is an automated message. Please do not reply to this email.</p>
-        <p>&copy; 2025 Vdtry06. All rights reserved.</p>
+        <p>&copy; 2025 Ecommerce App.</p>
     </div>
 </div>
 </body>
-
 </html>

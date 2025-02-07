@@ -43,7 +43,8 @@ public enum ErrorCode {
     ORDER_LINE_NOT_FOUND(1034, "Order line not found", HttpStatus.NOT_FOUND),
     ORDER_ALREADY_PAID(1035, "Order already paid", HttpStatus.BAD_REQUEST),
     INVALID_ORDER_STATUS(1036, "Invalid order status", HttpStatus.BAD_REQUEST),
-    ORDER_NOT_PAID(1037, "Order not paid", HttpStatus.BAD_REQUEST),;
+    ORDER_NOT_PAID(1037, "Order not paid", HttpStatus.BAD_REQUEST),
+    ORDER_ALREADY_CANCELLED(1038, "Order already cancelled", HttpStatus.BAD_REQUEST),;
 
     private final int code;
     private final String message;

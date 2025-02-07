@@ -31,7 +31,6 @@ public class Notification {
     @JoinColumn(name = "order_id", referencedColumnName = "id")
     Order order;
 
-    @OneToOne
-    @JoinColumn(name = "payment_id", referencedColumnName = "id")
+    @OneToOne(mappedBy = "notification")
     Payment payment;
 }

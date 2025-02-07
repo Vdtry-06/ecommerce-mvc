@@ -13,7 +13,6 @@ import java.math.BigDecimal;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PaymentRequest {
-    BigDecimal amount;
     PaymentMethod paymentMethod;
     Long orderId;
     String orderReference;

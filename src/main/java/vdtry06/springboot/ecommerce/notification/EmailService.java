@@ -11,13 +11,13 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
-import vdtry06.springboot.ecommerce.core.constant.EmailTemplates;
+import vdtry06.springboot.ecommerce.core.constant.NotificationType;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
-import static vdtry06.springboot.ecommerce.core.constant.EmailTemplates.PAYMENT_CONFIRMATION;
+import static java.lang.String.*;
 
 
 @Service
@@ -33,9 +33,9 @@ public class EmailService {
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
         Context context = new Context();
         context.setVariable("verificationCode", verificationCode);
-        String htmlContent = templateEngine.process(EmailTemplates.EMAIL_VERIFICATION.getTemplate(), context);
+        String htmlContent = templateEngine.process(NotificationType.EMAIL_VERIFICATION.getTemplate(), context);
         helper.setTo(to);
-        helper.setSubject(EmailTemplates.EMAIL_VERIFICATION.getSubject());
+        helper.setSubject(NotificationType.EMAIL_VERIFICATION.getSubject());
         helper.setText(htmlContent, true);
         mailSender.send(message);
     }
@@ -47,28 +47,18 @@ public class EmailService {
             String orderReference
     ) throws MessagingException {
         MimeMessage mimeMessage = mailSender.createMimeMessage();
-        MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, "UTF-8");
-
-        String templateName = PAYMENT_CONFIRMATION.getTemplate();
-
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("username", username);
-        variables.put("amount", amount);
-        variables.put("orderReference", orderReference);
+        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
         Context context = new Context();
-        context.setVariables(variables);
-        messageHelper.setSubject(PAYMENT_CONFIRMATION.getSubject());
+        context.setVariable("destinationEmail", destinationEmail);
+        context.setVariable("username", username);
+        context.setVariable("amount", amount);
+        context.setVariable("orderReference", orderReference);
 
-        try {
-            String htmlTemplate = templateEngine.process(templateName, context);
-            messageHelper.setText(htmlTemplate, true);
-
-            messageHelper.setTo(destinationEmail);
-            mailSender.send(mimeMessage);
-            log.info(String.format("INFO - Email successfully sent to %s with template %s ", destinationEmail, templateName));
-        } catch (MessagingException e) {
-            log.warn("WARNING - Cannot send Email to {} ", destinationEmail);
-        }
+        String htmlContent = templateEngine.process(NotificationType.PAYMENT_CONFIRMATION.getTemplate(), context);
+        helper.setTo(destinationEmail);
+        helper.setSubject(NotificationType.PAYMENT_CONFIRMATION.getSubject());
+        helper.setText(htmlContent, true);
+        mailSender.send(mimeMessage);
     }
 }

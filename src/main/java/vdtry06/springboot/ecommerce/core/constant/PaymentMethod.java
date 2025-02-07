@@ -6,5 +6,6 @@ public enum PaymentMethod {
     VISA,
     MASTER_CARD,
     BITCOIN,
-    QR
+    QR,
+    CASH_ON_DELIVERY
 }
