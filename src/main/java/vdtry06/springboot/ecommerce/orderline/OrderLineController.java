@@ -13,27 +13,27 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/orders/order-lines")
+@RequestMapping("/orders")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class OrderLineController {
     OrderLineService orderLineService;
 
-    @PostMapping
-    public ApiResponse<OrderLineResponse> addOrderLine(@RequestBody OrderLineRequest request) {
+    @PostMapping("/{orderId}/order-lines")
+    public ApiResponse<OrderLineResponse> addOrderLine(@PathVariable Long orderId, @RequestBody OrderLineRequest request) {
         return ApiResponse.<OrderLineResponse>builder()
-                .data(orderLineService.addOrderLine(request))
+                .data(orderLineService.addOrderLine(orderId, request))
                 .build();
     }
 
-    @PutMapping("/{orderLineId}")
-    public ApiResponse<OrderLineResponse> updateOrderLine(@PathVariable Long orderLineId, @RequestBody OrderLineRequest request) {
+    @PutMapping("/{orderId}/order-lines/{orderLineId}")
+    public ApiResponse<OrderLineResponse> updateOrderLine(@PathVariable Long orderId, @PathVariable Long orderLineId, @RequestBody OrderLineRequest request) {
         return ApiResponse.<OrderLineResponse>builder()
-                .data(orderLineService.updateOrderLine(orderLineId, request))
+                .data(orderLineService.updateOrderLine(orderId, orderLineId, request))
                 .build();
     }
 
-    @DeleteMapping("/{orderLineId}")
+    @DeleteMapping("/order-lines/{orderLineId}")
     public ApiResponse<String> removeOrderLine(@PathVariable Long orderLineId) {
         orderLineService.removeOrderLine(orderLineId);
         return ApiResponse.<String>builder()
@@ -42,7 +42,7 @@ public class OrderLineController {
                 .build();
     }
 
-    @GetMapping("/{orderId}")
+    @GetMapping("/{orderId}/order-lines")
     public ApiResponse<List<OrderLineResponse>> getOrderLines(@PathVariable Long orderId) {
         return ApiResponse.<List<OrderLineResponse>>builder()
                 .data(orderLineService.getOrderLines(orderId))

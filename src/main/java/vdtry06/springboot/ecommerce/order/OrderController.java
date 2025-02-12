@@ -9,6 +9,8 @@ import vdtry06.springboot.ecommerce.core.ApiResponse;
 import vdtry06.springboot.ecommerce.order.dto.OrderRequest;
 import vdtry06.springboot.ecommerce.order.dto.OrderResponse;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/orders")
 @RequiredArgsConstructor
@@ -34,6 +36,24 @@ public class OrderController {
                 .data(orderResponse)
                 .build();
     }
+
+    @GetMapping("/get-all")
+    public ApiResponse<List<OrderResponse>> getAllOrders() {
+        List<OrderResponse> orderResponseList = orderService.getAllOrders();
+        return ApiResponse.<List<OrderResponse>>builder()
+                .data(orderResponseList)
+                .build();
+    }
+
+    @DeleteMapping("/delete/{orderId}")
+    public ApiResponse<List<OrderResponse>> deleteOrder(@PathVariable Long orderId) {
+        orderService.deleteOrder(orderId);
+        List<OrderResponse> orderResponseList = orderService.getAllOrders();
+        return ApiResponse.<List<OrderResponse>>builder()
+                .data(orderResponseList)
+                .build();
+    }
+
 
 //    @PutMapping("/{orderId}/status/paid")
 //    public ApiResponse<OrderResponse> updateOrderStatusToPaid(@PathVariable Long orderId) {

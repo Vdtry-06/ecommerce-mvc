@@ -31,9 +31,9 @@ public class OrderLineService {
     OrderLineMapper orderLineMapper;
 
     @Transactional
-    public OrderLineResponse addOrderLine(OrderLineRequest request) {
+    public OrderLineResponse addOrderLine(Long orderId, OrderLineRequest request) {
 
-        Order order = orderRepository.findById(request.getOrderId())
+        Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
         Product product = productRepository.findById(request.getProductId())
@@ -43,7 +43,7 @@ public class OrderLineService {
             throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
         }
 
-        Optional<OrderLine> existingOrderLine = orderLineRepository.findByOrderIdAndProductId(request.getOrderId(), request.getProductId());
+        Optional<OrderLine> existingOrderLine = orderLineRepository.findByOrderIdAndProductId(orderId, request.getProductId());
 
         OrderLine orderLine;
         if(existingOrderLine.isPresent()) {
@@ -77,9 +77,13 @@ public class OrderLineService {
     }
 
     @Transactional
-    public OrderLineResponse updateOrderLine(Long orderLineId, OrderLineRequest request) {
+    public OrderLineResponse updateOrderLine(Long orderId, Long orderLineId, OrderLineRequest request) {
         OrderLine orderLine = orderLineRepository.findById(orderLineId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_LINE_NOT_FOUND));
+
+        if(!orderLine.getOrder().getId().equals(orderId)) {
+            throw new AppException(ErrorCode.ORDER_NOT_FOUND);
+        }
 
         if(orderLine.getProduct().getAvailableQuantity() < request.getQuantity()) {
             throw new AppException(ErrorCode.INSUFFICIENT_STOCK);

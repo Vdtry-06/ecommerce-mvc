@@ -4,6 +4,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vdtry06.springboot.ecommerce.core.constant.OrderStatus;
@@ -22,6 +23,7 @@ import vdtry06.springboot.ecommerce.user.User;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -35,7 +37,6 @@ public class OrderService {
     NotificationService notificationService;
     OrderLineService orderLineService;
     OrderLineMapper orderLineMapper;
-
 
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
@@ -51,7 +52,7 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
 
         List<OrderLineResponse> orderLineResponses = request.getOrderLines().stream()
-                .map(orderLineService::addOrderLine)
+                .map(orderLineRequest -> orderLineService.addOrderLine(order.getId(), orderLineRequest))
                 .toList();
 
         savedOrder.setOrderLines(orderLineMapper.toOrderLines(orderLineResponses));
@@ -74,6 +75,23 @@ public class OrderService {
         orderResponse.setTotalPrice(totalPrice);
 
         return orderResponse;
+    }
+
+    public List<OrderResponse> getAllOrders() {
+        OrderMapper orderMapper = Mappers.getMapper(OrderMapper.class);
+        return orderRepository.findAll().stream()
+                .map(orderMapper::toOrderResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<OrderResponse> deleteOrder(Long orderId) {
+        OrderResponse orderResponse = getOrderById(orderId);
+        if(orderResponse.getStatus() == OrderStatus.PENDING) {
+            orderRepository.deleteById(orderId);
+            return getAllOrders();
+        } else {
+            throw new AppException(ErrorCode.ORDER_STATE_PENDING);
+        }
     }
 
 //    @Transactional
