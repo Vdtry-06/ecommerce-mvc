@@ -58,4 +58,12 @@ public class ProductController {
                 .data(String.format("Product with id %s deleted", id))
                 .build();
     }
+
+    @GetMapping("/get-name-products/{name}")
+    public ApiResponse<List<ProductResponse>> getProductByName(@PathVariable String name) {
+        List<ProductResponse> products = productService.getNameProducts(name);
+        return ApiResponse.<List<ProductResponse>>builder()
+                .data(products)
+                .build();
+    }
 }

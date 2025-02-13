@@ -105,4 +105,14 @@ public class ProductService {
         }
         productRepository.deleteById(id);
     }
+
+    public List<ProductResponse> getNameProducts(String name) {
+        List<Product> products = productRepository.findByNameContaining(name);
+        if(products.isEmpty()) {
+            throw new AppException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
+        return products.stream()
+                .map(productMapper::toProductResponse)
+                .collect(Collectors.toList());
+    }
 }
