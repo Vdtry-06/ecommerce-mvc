@@ -9,4 +9,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findAllByIdInOrderById(List<Long> ids);
 
     List<Product> findByNameContaining(String name);
+
+    void deleteByImageUrl(String imageUrl);
 }

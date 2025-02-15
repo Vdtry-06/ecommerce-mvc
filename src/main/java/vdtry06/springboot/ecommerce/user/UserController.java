@@ -23,9 +23,9 @@ public class UserController {
 
     UserService userService;
 
-    @PutMapping("/users")
-    public ApiResponse<UserResponse> updateUser(@RequestBody @Valid UserUpdationRequest request) {
-        UserResponse userResponse = userService.updateUser(request);
+    @PutMapping("/users/{userId}")
+    public ApiResponse<UserResponse> updateUser(@PathVariable Long userId, @ModelAttribute @Valid UserUpdationRequest request){
+        UserResponse userResponse = userService.updateUser(userId, request);
         return ApiResponse.<UserResponse>builder()
                 .data(userResponse)
                 .message("User updated successfully")
@@ -41,9 +41,9 @@ public class UserController {
                 .build();
     }
 
-    @GetMapping("/users")
-    public ApiResponse<UserResponse> getUser() {
-        UserResponse userResponse = userService.getUser();
+    @GetMapping("/users/{userId}")
+    public ApiResponse<UserResponse> getUser(@PathVariable Long userId) {
+        UserResponse userResponse = userService.getUser(userId);
         return ApiResponse.<UserResponse>builder()
                 .data(userResponse)
                 .message("Fetched user successfully")

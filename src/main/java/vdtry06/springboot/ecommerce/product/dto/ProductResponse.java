@@ -19,4 +19,5 @@ public class ProductResponse {
     Double availableQuantity;
     BigDecimal price;
     Set<CategoryResponse> categories;
+    String imageUrl;
 }

@@ -18,7 +18,7 @@ public class UserResponse {
     String email;
     String firstName;
     String lastName;
-
     LocalDate dateOfBirth;
     Set<RoleResponse> roles;
+    String imageUrl;
 }

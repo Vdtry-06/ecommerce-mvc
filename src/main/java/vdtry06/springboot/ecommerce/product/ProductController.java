@@ -9,6 +9,7 @@ import vdtry06.springboot.ecommerce.core.ApiResponse;
 import vdtry06.springboot.ecommerce.product.dto.ProductRequest;
 import vdtry06.springboot.ecommerce.product.dto.ProductResponse;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -20,7 +21,7 @@ public class ProductController {
     private final ProductService productService;
 
     @PostMapping("/add")
-    public ApiResponse<ProductResponse> addProduct(@RequestBody ProductRequest request) {
+    public ApiResponse<ProductResponse> addProduct(@ModelAttribute ProductRequest request) {
         ProductResponse response = productService.addProduct(request);
         return ApiResponse.<ProductResponse>builder()
                 .data(response)
@@ -28,7 +29,7 @@ public class ProductController {
     }
 
     @PutMapping("/update/{id}")
-    public ApiResponse<ProductResponse> updateProduct(@PathVariable Long id, @RequestBody ProductRequest request) {
+    public ApiResponse<ProductResponse> updateProduct(@PathVariable Long id, @ModelAttribute ProductRequest request) {
         ProductResponse response = productService.updateProduct(id, request);
         return ApiResponse.<ProductResponse>builder()
                 .data(response)

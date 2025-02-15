@@ -21,17 +21,17 @@ import java.util.List;
 public class AddressController {
     AddressService addressService;
 
-    @PostMapping
-    public ApiResponse<AddressResponse> createAddress(@RequestBody AddressRequest request) {
+    @PostMapping("/user-id/{userId}")
+    public ApiResponse<AddressResponse> createAddress(@PathVariable Long userId, @RequestBody AddressRequest request) {
         return ApiResponse.<AddressResponse>builder()
-                .data(addressService.createAddress(request))
+                .data(addressService.createAddress(userId, request))
                 .build();
     }
 
-    @GetMapping("/{addressId}")
-    public ApiResponse<AddressResponse> getAddress(@PathVariable Long addressId) {
+    @GetMapping("/{addressId}/user-id/{userId}")
+    public ApiResponse<AddressResponse> getAddress(@PathVariable Long userId, @PathVariable Long addressId) {
         return ApiResponse.<AddressResponse>builder()
-                .data(addressService.getAddress(addressId))
+                .data(addressService.getAddress(userId, addressId))
                 .build();
     }
 
@@ -43,10 +43,10 @@ public class AddressController {
                 .build();
     }
 
-    @PutMapping
-    public ApiResponse<AddressResponse> updateAddress(@RequestBody @Valid AddressRequest request) {
+    @PutMapping("update-address/user-id/{userId}")
+    public ApiResponse<AddressResponse> updateAddress(@PathVariable Long userId, @RequestBody @Valid AddressRequest request) {
         return ApiResponse.<AddressResponse>builder()
-                .data(addressService.updateAddress(request))
+                .data(addressService.updateAddress(userId, request))
                 .build();
     }
 }

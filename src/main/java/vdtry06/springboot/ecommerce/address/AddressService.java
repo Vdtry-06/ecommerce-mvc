@@ -5,8 +5,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import vdtry06.springboot.ecommerce.address.dto.AddressRequest;
 import vdtry06.springboot.ecommerce.address.dto.AddressResponse;
@@ -26,10 +24,9 @@ public class AddressService {
     AddressMapper addressMapper;
     UserRepository userRepository;
 
-    public AddressResponse createAddress(AddressRequest request) {
-        Long userId = getCurrentUserId();
+    public AddressResponse createAddress(Long userId, AddressRequest request) {
 
-        log.info("Creating address for user {}", userId);
+//        log.info("Creating address for user {}", userId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
@@ -46,8 +43,8 @@ public class AddressService {
 
     }
 
-    public AddressResponse getAddress(Long addressId) {
-        Long userId = getCurrentUserId();
+    public AddressResponse getAddress(Long userId, Long addressId) {
+//        Long userId = getCurrentUserId();
 
         log.info("Getting address {} for user {}", addressId, userId);
 
@@ -68,8 +65,8 @@ public class AddressService {
                 .toList();
     }
 
-    public AddressResponse updateAddress(AddressRequest request) {
-        Long userId = getCurrentUserId();
+    public AddressResponse updateAddress(Long userId, AddressRequest request) {
+//        Long userId = getCurrentUserId();
 
         log.info("Updating address for user {}", userId);
         User user = userRepository.findById(userId)
@@ -89,13 +86,13 @@ public class AddressService {
         return addressMapper.toAddressResponse(address);
     }
 
-    private Long getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-        log.info("Getting current user id {}", user.getId());
-        return user.getId();
-    }
+//    private Long getCurrentUserId() {
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        String username = authentication.getName();
+//        User user = userRepository.findByUsername(username)
+//                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+//        log.info("Getting current user id {}", user.getId());
+//        return user.getId();
+//    }
 
 }

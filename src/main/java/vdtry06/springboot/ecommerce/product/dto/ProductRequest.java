@@ -2,6 +2,7 @@ package vdtry06.springboot.ecommerce.product.dto;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.Set;
@@ -17,4 +18,5 @@ public class ProductRequest {
     Double availableQuantity;
     BigDecimal price;
     Set<String> categoryNames;
+    MultipartFile file;
 }

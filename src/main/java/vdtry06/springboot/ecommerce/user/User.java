@@ -51,6 +51,9 @@ public class User implements UserDetails {
     String lastName;
     LocalDate dateOfBirth;
 
+    @Column(name = "image_url")
+    String imageUrl;
+
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "address_id", referencedColumnName = "id")
     Address address;

@@ -48,6 +48,9 @@ public enum ErrorCode {
     NULL_KEY_OR_DATA(1039, "Null key or data", HttpStatus.BAD_REQUEST),
     PAYMENT_FAILED(1040, "Payment failed", HttpStatus.BAD_REQUEST),
     ORDER_STATE_PENDING(1041, "Order cannot be deleted as it is not in PENDING status.", HttpStatus.BAD_REQUEST),
+    INVALID_FILE(1042, "Invalid uploaded file", HttpStatus.BAD_REQUEST),
+    UPLOAD_FAILED(1043, "Error uploading image to Cloudinary", HttpStatus.BAD_REQUEST),
+    DELETE_FAILED(1044, "Error deleting image from Cloudinary", HttpStatus.BAD_REQUEST ),
     ;
 
     private final int code;

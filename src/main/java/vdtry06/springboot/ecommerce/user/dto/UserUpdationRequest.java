@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.springframework.web.multipart.MultipartFile;
 import vdtry06.springboot.ecommerce.user.validator.BirthConstraint;
 
 @Data
@@ -22,4 +23,6 @@ public class UserUpdationRequest {
 
     @BirthConstraint(min = 16, message = "INVALID_BIRTHDAY")
     LocalDate dateOfBirth;
+
+    MultipartFile file;
 }

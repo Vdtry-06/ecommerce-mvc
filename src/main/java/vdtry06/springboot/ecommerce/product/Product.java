@@ -29,6 +29,8 @@ public class Product {
     @Column(columnDefinition = "TEXT")
     String description;
 
+    String imageUrl;
+
     @Column(nullable = false)
     Integer availableQuantity;
 
