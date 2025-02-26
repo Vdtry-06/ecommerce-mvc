@@ -1,5 +1,6 @@
 package vdtry06.springboot.ecommerce.user.password;
 
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -28,7 +29,7 @@ public class ResetPasswordController {
     }
 
     @PostMapping("/verify-email-reset-password")
-    public ApiResponse<UserResponse> verifyCodeAndResetPassword(@RequestBody ResetPassword request) {
+    public ApiResponse<UserResponse> verifyCodeAndResetPassword(@RequestBody @Valid ResetPassword request) {
         return ApiResponse.<UserResponse>builder()
                 .data(resetPasswordService.verifyCodeAndResetPassword(request))
                 .build();
