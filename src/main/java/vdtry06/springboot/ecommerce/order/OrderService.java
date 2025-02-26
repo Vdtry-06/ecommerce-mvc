@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.mapstruct.factory.Mappers;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vdtry06.springboot.ecommerce.core.constant.OrderStatus;
@@ -77,6 +79,7 @@ public class OrderService {
         return orderResponse;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public List<OrderResponse> getAllOrders() {
         OrderMapper orderMapper = Mappers.getMapper(OrderMapper.class);
         return orderRepository.findAll().stream()

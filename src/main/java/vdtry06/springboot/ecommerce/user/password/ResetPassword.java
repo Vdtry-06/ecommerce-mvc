@@ -12,7 +12,9 @@ import lombok.experimental.FieldDefaults;
 public class ResetPassword {
     String email;
     String verificationCode;
+
     @Size(min = 8, message = "INVALID_PASSWORD")
     String newPassword;
+
     String confirmPassword;
 }

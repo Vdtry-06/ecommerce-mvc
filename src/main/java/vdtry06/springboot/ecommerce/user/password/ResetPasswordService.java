@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ResetPasswordService {
-    UserRepository userRepository;
+    UserRepository userRepository;  
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
     KafkaProducerService kafkaProducerService;
@@ -54,6 +54,9 @@ public class ResetPasswordService {
         if(sentVerificationCode == null) {
             throw new AppException(ErrorCode.EMAIL_INVALID);
         }
+//        if(request.getNewPassword().length() < 8) {
+//            throw new AppException(ErrorCode.INVALID_PASSWORD);
+//        }
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_FOUND));
