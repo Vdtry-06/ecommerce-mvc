@@ -19,9 +19,12 @@ public class Address {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
+    String country;
+    String city;
+    String district;
+    String ward;
     String street;
     String houseNumber;
-    String zipCode;
 
     @OneToOne(mappedBy = "address")
     User user;

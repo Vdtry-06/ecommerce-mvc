@@ -47,6 +47,8 @@ public class OrderService {
                 .user(user)
                 .status(OrderStatus.PENDING)
                 .totalPrice(BigDecimal.ZERO)
+                .username(user.getUsername())
+                .email(user.getEmail())
                 .build();
 
         Order savedOrder = orderRepository.save(order);
