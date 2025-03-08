@@ -2,6 +2,7 @@ package vdtry06.springboot.ecommerce.authenticate;
 
 import java.text.ParseException;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,7 +33,7 @@ public class AuthenticationController {
     AuthenticationEmailService authenticationEmailService;
 
     @PostMapping("/signup")
-    public ApiResponse<RegisterUserResponse> register(@RequestBody RegisterUserRequest request) {
+    public ApiResponse<RegisterUserResponse> register(@RequestBody @Valid RegisterUserRequest request) {
         return ApiResponse.<RegisterUserResponse>builder()
                 .data(authenticationEmailService.signup(request))
                 .build();
