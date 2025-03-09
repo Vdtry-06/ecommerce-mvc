@@ -21,6 +21,9 @@ This mvc is responsible for:
 * jwt, oauth2
 * api
 * thymeleaf
+* cloudinary
+* chat bot
+* demo redis
 
 ## Prerequisites
 * Java SDK 21
