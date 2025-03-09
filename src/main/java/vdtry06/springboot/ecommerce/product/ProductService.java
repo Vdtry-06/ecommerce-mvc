@@ -117,13 +117,11 @@ public class ProductService {
         return productMapper.toProductResponse(product);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     public ProductResponse getProduct(Long id) {
         return productMapper.toProductResponse(
                 productRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND)));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     public List<ProductResponse> getAllProducts() {
         return productRepository.findAll().stream()
                 .map(productMapper::toProductResponse)
