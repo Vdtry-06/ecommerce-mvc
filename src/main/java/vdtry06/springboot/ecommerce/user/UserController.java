@@ -10,6 +10,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import vdtry06.springboot.ecommerce.user.dto.UserInfoResponse;
 import vdtry06.springboot.ecommerce.user.dto.UserUpdationRequest;
 import vdtry06.springboot.ecommerce.core.ApiResponse;
 import vdtry06.springboot.ecommerce.user.dto.UserResponse;
@@ -60,10 +61,10 @@ public class UserController {
     }
 
     @GetMapping("/users/myInfo")
-    public ApiResponse<UserResponse> getMyInfo() {
-        UserResponse userResponse = userService.getMyInfo();
-        return ApiResponse.<UserResponse>builder()
-                .data(userResponse)
+    public ApiResponse<UserInfoResponse> getMyInfo() {
+        UserInfoResponse userInfoResponse = userService.getMyInfo();
+        return ApiResponse.<UserInfoResponse>builder()
+                .data(userInfoResponse)
                 .message("Fetched user information successfully")
                 .build();
     }

@@ -41,6 +41,12 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
+  ai:
+    ollama:
+      chat:
+        options:
+          model: deepseek-r1:latest
+
 jwt:
   signerKey: "${JWT_SIGNER_KEY}"
   valid-duration: ${JWT_VALID_DURATION:3600} # in seconds

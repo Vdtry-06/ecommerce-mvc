@@ -10,8 +10,11 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AddressRequest {
 
+    String country;
+    String city;
+    String district;
+    String ward;
     String street;
     String houseNumber;
-    String zipCode;
 
 }

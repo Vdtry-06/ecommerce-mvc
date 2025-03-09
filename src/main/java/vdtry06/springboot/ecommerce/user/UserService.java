@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import vdtry06.springboot.ecommerce.cloudinary.CloudinaryService;
+import vdtry06.springboot.ecommerce.user.dto.UserInfoResponse;
 import vdtry06.springboot.ecommerce.user.dto.UserUpdationRequest;
 import vdtry06.springboot.ecommerce.user.dto.UserResponse;
 import vdtry06.springboot.ecommerce.core.exception.AppException;
@@ -97,23 +99,23 @@ public class UserService {
     }
 
     @PostAuthorize("returnObject.username == authentication.name")
-    public UserResponse getMyInfo() {
+    public UserInfoResponse getMyInfo() {
         var context = SecurityContextHolder.getContext();
         String name = context.getAuthentication().getName();
 
         User user = userRepository.findByUsername(name).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        return userMapper.toUserResponse(user);
+        return userMapper.toUserInfoResponse((user));
     }
 
-//    private Long getCurrentUserId() {
-//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-//        String username = authentication.getName();
-//        User user = userRepository.findByUsername(username)
-//                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-//        log.info("Getting current user id {}", user.getId());
-//        return user.getId();
-//    }
+    public Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        log.info("Getting current user id {}", user.getId());
+        return user.getId();
+    }
 //
 //    public Optional<UserResponse> findUserById(Long id) {
 //        return userRepository.findUserById(id)

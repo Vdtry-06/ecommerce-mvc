@@ -10,13 +10,15 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.View;
 
 import lombok.extern.slf4j.Slf4j;
 import vdtry06.springboot.ecommerce.core.ApiResponse;
 
-@ControllerAdvice
+//@ControllerAdvice
 @Slf4j
+@RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final String MIN_ATTRIBUTE = "min";

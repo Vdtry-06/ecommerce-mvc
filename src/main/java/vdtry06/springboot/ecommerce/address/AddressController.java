@@ -21,32 +21,32 @@ import java.util.List;
 public class AddressController {
     AddressService addressService;
 
-    @PostMapping("/user-id/{userId}")
-    public ApiResponse<AddressResponse> createAddress(@PathVariable Long userId, @RequestBody AddressRequest request) {
+    @PostMapping("/add-address")
+    public ApiResponse<AddressResponse> createAddress(@RequestBody AddressRequest request) {
         return ApiResponse.<AddressResponse>builder()
-                .data(addressService.createAddress(userId, request))
+                .data(addressService.createAddress(request))
                 .build();
     }
 
-    @GetMapping("/{addressId}/user-id/{userId}")
-    public ApiResponse<AddressResponse> getAddress(@PathVariable Long userId, @PathVariable Long addressId) {
+    @GetMapping("/get-address/{addressId}")
+    public ApiResponse<AddressResponse> getAddress(@PathVariable Long addressId) {
         return ApiResponse.<AddressResponse>builder()
-                .data(addressService.getAddress(userId, addressId))
+                .data(addressService.getAddress(addressId))
                 .build();
     }
 
     // có thể phân trang nếu dữ liệu lớn
-    @GetMapping
+    @GetMapping("get-all")
     public ApiResponse<List<AddressResponse>> getAddresses() {
         return ApiResponse.<List<AddressResponse>>builder()
                 .data(addressService.getAddresses())
                 .build();
     }
 
-    @PutMapping("update-address/user-id/{userId}")
-    public ApiResponse<AddressResponse> updateAddress(@PathVariable Long userId, @RequestBody @Valid AddressRequest request) {
+    @PutMapping("update-address")
+    public ApiResponse<AddressResponse> updateAddress(@RequestBody @Valid AddressRequest request) {
         return ApiResponse.<AddressResponse>builder()
-                .data(addressService.updateAddress(userId, request))
+                .data(addressService.updateAddress(request))
                 .build();
     }
 }
