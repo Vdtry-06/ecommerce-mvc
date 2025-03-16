@@ -58,14 +58,12 @@ public class CategoryService {
 
 
     // pagination
-    @PreAuthorize("hasRole('ADMIN')")
     public List<CategoryResponse> getAllCategories() {
         return categoryRepository.findAll().stream()
                 .map(categoryMapper::toCategoryResponse)
                 .collect(Collectors.toList());
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     public List<CategoryResponse> getNameCategories(String name) {
         List<Category> categories = categoryRepository.findByNameContaining(name);
         if(categories.isEmpty()) {
@@ -77,7 +75,6 @@ public class CategoryService {
     }
 
 
-    @PreAuthorize("hasRole('ADMIN')")
     public CategoryResponse getCategoryById(Long id) {
         return categoryMapper.toCategoryResponse(
                 categoryRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_EXISTED)));

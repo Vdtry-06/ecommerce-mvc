@@ -148,4 +148,15 @@ public class ProductService {
                 .map(productMapper::toProductResponse)
                 .collect(Collectors.toList());
     }
+
+    public List<ProductResponse> getProductsByCategories(List<Long> categoryIds) {
+        if (categoryIds.isEmpty()) {
+            throw new AppException(ErrorCode.CATEGORY_NOT_EXISTED);
+        }
+        List<Product> products = productRepository.findProductsByExactCategories(categoryIds, categoryIds.size());
+        return products.stream()
+                .map(productMapper::toProductResponse)
+                .collect(Collectors.toList());
+    }
+
 }
