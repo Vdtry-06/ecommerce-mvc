@@ -13,6 +13,8 @@ import vdtry06.springboot.ecommerce.category.Category;
 import vdtry06.springboot.ecommerce.core.exception.AppException;
 import vdtry06.springboot.ecommerce.core.exception.ErrorCode;
 import vdtry06.springboot.ecommerce.category.CategoryRepository;
+import vdtry06.springboot.ecommerce.topping.Topping;
+import vdtry06.springboot.ecommerce.topping.ToppingRepository;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -28,6 +30,7 @@ public class ProductService {
     ProductMapper productMapper;
     CategoryRepository categoryRepository;
     CloudinaryService cloudinaryService;
+    ToppingRepository toppingRepository;
 
     @PreAuthorize("hasRole('ADMIN')")
     public ProductResponse addProduct(ProductRequest request) {
@@ -56,6 +59,15 @@ public class ProductService {
         Product product = productMapper.toProduct(request);
         product.setCategories(categories);
         product.setImageUrl(imageUrl);
+
+
+        Set<Topping> toppings = request.getToppingNames().stream()
+                .map(toppingName -> toppingRepository.findByName(toppingName)
+                        .orElseThrow(() -> new AppException(ErrorCode.TOPPING_NOT_EXISTED)))
+                .collect(Collectors.toSet());
+
+        product.setToppings(toppings);
+
         productRepository.save(product);
         return productMapper.toProductResponse(product);
     }
@@ -110,6 +122,15 @@ public class ProductService {
             String imageUrl = cloudinaryService.uploadFile(request.getFile(), "E-commerce/products/" + product.getName());
             product.setImageUrl(imageUrl);
             log.info("Updated product image: {}", imageUrl);
+        }
+
+        if(request.getToppingNames() != null) {
+            Set<Topping> toppings = request.getToppingNames().stream()
+                    .map(toppingName -> toppingRepository.findByName(toppingName)
+                            .orElseThrow(() -> new AppException(ErrorCode.TOPPING_NOT_EXISTED)))
+                    .collect(Collectors.toSet());
+            product.setToppings(toppings);
+            log.info("Update product Topping: {}", product.getToppings());
         }
 
         productRepository.save(product);

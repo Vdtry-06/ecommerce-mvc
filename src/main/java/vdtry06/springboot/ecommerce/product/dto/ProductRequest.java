@@ -19,4 +19,5 @@ public class ProductRequest {
     BigDecimal price;
     Set<String> categoryNames;
     MultipartFile file;
+    Set<String> toppingNames;
 }

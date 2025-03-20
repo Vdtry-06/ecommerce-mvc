@@ -3,6 +3,7 @@ package vdtry06.springboot.ecommerce.product.dto;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import vdtry06.springboot.ecommerce.category.dto.CategoryResponse;
+import vdtry06.springboot.ecommerce.topping.dto.ToppingResponse;
 
 import java.math.BigDecimal;
 import java.util.Set;
@@ -20,4 +21,5 @@ public class ProductResponse {
     BigDecimal price;
     Set<CategoryResponse> categories;
     String imageUrl;
+    Set<ToppingResponse> toppingNames;
 }

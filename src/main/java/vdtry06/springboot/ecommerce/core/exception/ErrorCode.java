@@ -52,7 +52,8 @@ public enum ErrorCode {
     UPLOAD_FAILED(1043, "Error uploading image to Cloudinary", HttpStatus.BAD_REQUEST),
     DELETE_FAILED(1044, "Error deleting image from Cloudinary", HttpStatus.BAD_REQUEST ),
     TOPPING_NOT_FOUND(1055, "Topping not found", HttpStatus.NOT_FOUND),
-    TOPPING_NAME_EXISTS(1056, "Topping name already exists", HttpStatus.BAD_REQUEST)
+    TOPPING_NAME_EXISTS(1056, "Topping name already exists", HttpStatus.BAD_REQUEST),
+    TOPPING_NOT_EXISTED(1057, "Topping does not exist", HttpStatus.BAD_REQUEST)
     ;
 
     private final int code;
