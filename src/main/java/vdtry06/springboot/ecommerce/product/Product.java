@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import vdtry06.springboot.ecommerce.category.Category;
 import vdtry06.springboot.ecommerce.orderline.OrderLine;
+import vdtry06.springboot.ecommerce.topping.Topping;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -35,6 +36,14 @@ public class Product {
     Integer availableQuantity;
 
     BigDecimal price;
+
+    @ManyToMany
+    @JoinTable(
+            name = "product_topping",
+            joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "topping_id")
+    )
+    Set<Topping> toppings;
 
     @ManyToMany
     @JoinTable(

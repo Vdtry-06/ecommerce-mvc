@@ -4,6 +4,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import vdtry06.springboot.ecommerce.core.exception.AppException;
 import vdtry06.springboot.ecommerce.core.exception.ErrorCode;
@@ -21,6 +22,8 @@ public class ToppingService {
     ToppingMapper toppingMapper;
     ToppingRepository toppingRepository;
 
+
+    @PreAuthorize("hasRole('ADMIN')")
     public ToppingResponse addTopping(ToppingRequest request) {
         if(toppingRepository.existsByName(request.getName())) {
             throw new AppException(ErrorCode.TOPPING_NAME_EXISTS);
@@ -34,6 +37,7 @@ public class ToppingService {
         return toppingMapper.toToppingResponse(topping);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public ToppingResponse updateTopping(Long id, ToppingRequest request) {
         Topping topping = toppingRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.TOPPING_NOT_FOUND));
@@ -56,6 +60,7 @@ public class ToppingService {
         return toppingMapper.toToppingResponse(topping);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteTopping(Long id) {
         toppingRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.TOPPING_NOT_FOUND));
         toppingRepository.deleteById(id);
