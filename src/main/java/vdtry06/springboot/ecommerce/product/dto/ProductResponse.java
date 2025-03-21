@@ -21,5 +21,5 @@ public class ProductResponse {
     BigDecimal price;
     Set<CategoryResponse> categories;
     String imageUrl;
-    Set<ToppingResponse> toppingNames;
+    Set<ToppingResponse> toppings;
 }
