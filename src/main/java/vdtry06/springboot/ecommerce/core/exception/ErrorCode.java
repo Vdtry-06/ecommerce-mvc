@@ -53,7 +53,8 @@ public enum ErrorCode {
     DELETE_FAILED(1044, "Error deleting image from Cloudinary", HttpStatus.BAD_REQUEST ),
     TOPPING_NOT_FOUND(1055, "Topping not found", HttpStatus.NOT_FOUND),
     TOPPING_NAME_EXISTS(1056, "Topping name already exists", HttpStatus.BAD_REQUEST),
-    TOPPING_NOT_EXISTED(1057, "Topping does not exist", HttpStatus.BAD_REQUEST)
+    TOPPING_NOT_EXISTED(1057, "Topping does not exist", HttpStatus.BAD_REQUEST),
+    REVIEW_NOT_FOUND(1058, "Review not found", HttpStatus.NOT_FOUND)
     ;
 
     private final int code;
