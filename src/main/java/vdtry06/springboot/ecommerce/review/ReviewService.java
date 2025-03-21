@@ -11,6 +11,8 @@ import vdtry06.springboot.ecommerce.review.dto.ReviewRequest;
 import vdtry06.springboot.ecommerce.review.dto.ReviewResponse;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -32,7 +34,7 @@ public class ReviewService {
 
     public ReviewResponse updateReview(Long id, ReviewRequest request) {
         Review review = reviewRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND))
+                .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND));
         if(request.getRatingScore() != null) {
             review.setRatingScore(request.getRatingScore());
         }
@@ -55,11 +57,16 @@ public class ReviewService {
         return reviewMapper.toReviewResponse(review);
     }
 
-    public ReviewResponse getAllReviews() {
-
+    public List<ReviewResponse> getAllReviews() {
+        return reviewRepository.findAll().stream()
+                .map(reviewMapper::toReviewResponse)
+                .collect(Collectors.toList());
     }
 
-    public void deleteReview(ReviewRequest request) {
-
+    public void deleteReview(Long id) {
+        if(!reviewRepository.existsById(id)) {
+            throw new AppException(ErrorCode.REVIEW_NOT_EXISTED);
+        }
+        reviewRepository.deleteById(id);
     }
 }
