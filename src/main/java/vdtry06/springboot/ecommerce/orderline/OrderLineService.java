@@ -94,11 +94,19 @@ public class OrderLineService {
     }
 
     @Transactional
-    public void removeOrderLine(Long orderLineId) {
+    public void removeOrderLine(Long orderId, Long orderLineId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
         OrderLine orderLine = orderLineRepository.findById(orderLineId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_LINE_NOT_FOUND));
-
+        order.setTotalPrice(order.getTotalPrice().subtract(orderLine.getPrice()));
+        order.getOrderLines().remove(orderLine);
         orderLineRepository.delete(orderLine);
+        if (order.getOrderLines().isEmpty()) {
+            orderRepository.delete(order);
+        } else {
+            orderRepository.save(order);
+        }
     }
 
     public List<OrderLineResponse> getOrderLines(Long orderId) {

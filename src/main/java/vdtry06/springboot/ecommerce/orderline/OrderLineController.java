@@ -33,9 +33,9 @@ public class OrderLineController {
                 .build();
     }
 
-    @DeleteMapping("/order-lines/{orderLineId}")
-    public ApiResponse<String> removeOrderLine(@PathVariable Long orderLineId) {
-        orderLineService.removeOrderLine(orderLineId);
+    @DeleteMapping("{orderId}/order-lines/{orderLineId}")
+    public ApiResponse<String> removeOrderLine(@PathVariable Long orderId, @PathVariable Long orderLineId) {
+        orderLineService.removeOrderLine(orderId, orderLineId);
         return ApiResponse.<String>builder()
                 .message("Order line removed")
                 .data(null)

@@ -1,6 +1,7 @@
 package vdtry06.springboot.ecommerce.order;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 import vdtry06.springboot.ecommerce.orderline.OrderLineMapper;
 import vdtry06.springboot.ecommerce.orderline.dto.OrderLineResponse;
@@ -15,6 +16,7 @@ public interface OrderMapper {
     OrderLineMapper orderLineMapper = Mappers.getMapper(OrderLineMapper.class);
     Order toOrder(OrderRequest request);
 
+    @Mapping(source = "user.id", target = "userId")
     default OrderResponse toOrderResponse(Order order) {
         return OrderResponse.builder()
                 .id(order.getId())

@@ -27,6 +27,13 @@ public class OrderController {
                 .data(orderResponse)
                 .build();
     }
+    @GetMapping("/user-id/{userId}")
+    public ApiResponse<List<OrderResponse>> getAllOrdersOfUser(@PathVariable Long userId) {
+        List<OrderResponse> orderResponse = orderService.getAllOrdersOfUser(userId);
+        return ApiResponse.<List<OrderResponse>>builder()
+                .data(orderResponse)
+                .build();
+    }
 
     @GetMapping("/{orderId}")
     public ApiResponse<OrderResponse> getOrderById(@PathVariable Long orderId) {

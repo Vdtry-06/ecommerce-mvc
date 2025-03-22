@@ -78,6 +78,17 @@ public class OrderService {
         return orderResponse;
     }
 
+    public List<OrderResponse> getAllOrdersOfUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        List<Order> orders = orderRepository.findByUserId(userId);
+
+        return orders.stream()
+                .map(orderMapper::toOrderResponse)
+                .toList();
+    }
+
     @PreAuthorize("hasRole('ADMIN')")
     public List<OrderResponse> getAllOrders() {
         OrderMapper orderMapper = Mappers.getMapper(OrderMapper.class);
