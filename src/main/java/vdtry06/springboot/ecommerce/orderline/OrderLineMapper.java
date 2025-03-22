@@ -1,6 +1,7 @@
 package vdtry06.springboot.ecommerce.orderline;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import vdtry06.springboot.ecommerce.orderline.dto.OrderLineRequest;
 import vdtry06.springboot.ecommerce.orderline.dto.OrderLineResponse;
 
@@ -10,6 +11,7 @@ import java.util.List;
 public interface OrderLineMapper {
     OrderLine toOrderLine(OrderLineRequest request);
 
+    @Mapping(target = "productId", source = "product")
     default OrderLineResponse toOrderLineResponse(OrderLine orderLine) {
         if (orderLine == null) {
             return null;

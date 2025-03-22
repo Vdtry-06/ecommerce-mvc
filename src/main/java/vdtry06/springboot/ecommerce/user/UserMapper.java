@@ -15,6 +15,7 @@ public interface UserMapper {
 
     UserResponse toUserResponse(User user);
 
+
     UserInfoResponse toUserInfoResponse(User user);
 
     RegisterUserResponse toRegisterUserResponse(User user);

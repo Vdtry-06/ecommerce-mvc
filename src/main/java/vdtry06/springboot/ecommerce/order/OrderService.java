@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.mapstruct.factory.Mappers;
-import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +23,7 @@ import vdtry06.springboot.ecommerce.user.UserRepository;
 import vdtry06.springboot.ecommerce.user.User;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -49,20 +49,17 @@ public class OrderService {
                 .user(user)
                 .status(OrderStatus.PENDING)
                 .totalPrice(BigDecimal.ZERO)
-                .username(user.getUsername())
-                .email(user.getEmail())
+                .orderLines(new ArrayList<>())
                 .build();
 
-        Order savedOrder = orderRepository.save(order);
+        orderRepository.save(order);
+        log.info("Saved order: {}", order.getId());
 
         List<OrderLineResponse> orderLineResponses = request.getOrderLines().stream()
                 .map(orderLineRequest -> orderLineService.addOrderLine(order.getId(), orderLineRequest))
                 .toList();
 
-        savedOrder.setOrderLines(orderLineMapper.toOrderLines(orderLineResponses));
-        savedOrder = orderRepository.save(savedOrder);
-
-        OrderResponse orderResponse = orderMapper.toOrderResponse(savedOrder);
+        OrderResponse orderResponse = orderMapper.toOrderResponse(order);
         orderResponse.setOrderLines(orderLineResponses);
 
         return orderResponse;

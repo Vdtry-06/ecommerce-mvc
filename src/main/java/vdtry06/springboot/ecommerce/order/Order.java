@@ -28,8 +28,8 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    String username;
-    String email;
+//    String username;
+//    String email;
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status;

@@ -105,6 +105,10 @@ public class UserService {
 
         User user = userRepository.findByUsername(name).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
+        user.getOrders().forEach(order ->
+                order.getOrderLines().forEach(orderLine ->
+                        orderLine.getProduct().getId()));
+
         return userMapper.toUserInfoResponse((user));
     }
 

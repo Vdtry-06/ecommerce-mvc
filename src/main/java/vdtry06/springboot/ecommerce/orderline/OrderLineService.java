@@ -35,7 +35,6 @@ public class OrderLineService {
 
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
@@ -50,7 +49,6 @@ public class OrderLineService {
             orderLine = existingOrderLine.get();
             orderLine.setQuantity(orderLine.getQuantity() + request.getQuantity());
             orderLine.setPrice(orderLine.getPrice().add(product.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()))));
-            orderLineRepository.save(orderLine);
         } else {
             BigDecimal price = product.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()));
             orderLine = OrderLine.builder()
@@ -59,17 +57,15 @@ public class OrderLineService {
                     .quantity(request.getQuantity())
                     .price(price)
                     .build();
-            orderLineRepository.save(orderLine);
+            order.getOrderLines().add(orderLine);
         }
 
+        orderLineRepository.save(orderLine);
         log.info("Add order line: {}", orderLine.getProduct().getId());
 
-        if(existingOrderLine.isPresent()) {
-            BigDecimal additionalPrice = product.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()));
-            order.setTotalPrice(order.getTotalPrice().add(additionalPrice));
-        } else {
-            order.setTotalPrice(order.getTotalPrice().add(orderLine.getPrice()));
-        }
+        order.setTotalPrice(order.getOrderLines().stream()
+                .map(OrderLine::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
 
         orderRepository.save(order);
 
