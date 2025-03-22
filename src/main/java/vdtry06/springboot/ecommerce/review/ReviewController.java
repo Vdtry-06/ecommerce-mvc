@@ -12,7 +12,7 @@ import vdtry06.springboot.ecommerce.review.dto.ReviewResponse;
 import java.util.List;
 
 @RestController
-@RequestMapping("/review")
+@RequestMapping("/reviews")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
