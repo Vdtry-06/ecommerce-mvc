@@ -12,6 +12,8 @@ import java.time.LocalDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ReviewResponse {
     Long id;
+    Long productId;
+    Long userId;
     Long ratingScore;
     String comment;
     LocalDateTime reviewDate;

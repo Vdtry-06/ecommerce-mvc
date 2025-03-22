@@ -7,8 +7,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import vdtry06.springboot.ecommerce.core.exception.AppException;
 import vdtry06.springboot.ecommerce.core.exception.ErrorCode;
+import vdtry06.springboot.ecommerce.product.Product;
+import vdtry06.springboot.ecommerce.product.ProductRepository;
 import vdtry06.springboot.ecommerce.review.dto.ReviewRequest;
 import vdtry06.springboot.ecommerce.review.dto.ReviewResponse;
+import vdtry06.springboot.ecommerce.user.User;
+import vdtry06.springboot.ecommerce.user.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,10 +25,21 @@ import java.util.stream.Collectors;
 public class ReviewService {
     ReviewRepository reviewRepository;
     ReviewMapper reviewMapper;
+    ProductRepository productRepository;
+    UserRepository userRepository;
 
     public ReviewResponse addReview(ReviewRequest request) {
-
+        Product product = productRepository.findById(request.getProductId())
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        boolean alreadyReviewed = reviewRepository.existsByUserAndProduct(user, product);
+        if (alreadyReviewed) {
+            throw new AppException(ErrorCode.REVIEW_ALREADY_EXISTS);
+        }
         Review review = reviewMapper.toReview(request);
+        review.setProduct(product);
+        review.setUser(user);
         review.setRatingScore(request.getRatingScore());
         review.setComment(request.getComment());
         review.setReviewDate(LocalDateTime.now());

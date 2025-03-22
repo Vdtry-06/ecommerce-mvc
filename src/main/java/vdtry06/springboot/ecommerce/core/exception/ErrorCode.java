@@ -56,6 +56,7 @@ public enum ErrorCode {
     TOPPING_NOT_EXISTED(1057, "Topping does not exist", HttpStatus.BAD_REQUEST),
     REVIEW_NOT_FOUND(1058, "Review not found", HttpStatus.NOT_FOUND),
     REVIEW_NOT_EXISTED(1059, "Review does not exist", HttpStatus.BAD_REQUEST),
+    REVIEW_ALREADY_EXISTS(1060, "Review already exists", HttpStatus.BAD_REQUEST),
     ;
 
     private final int code;
