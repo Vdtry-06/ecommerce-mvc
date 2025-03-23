@@ -25,6 +25,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import vdtry06.springboot.ecommerce.authenticate.dto.IntrospectRequest;
+import vdtry06.springboot.ecommerce.role.Role;
 import vdtry06.springboot.ecommerce.user.dto.LoginUserRequest;
 import vdtry06.springboot.ecommerce.user.dto.LogoutRequest;
 import vdtry06.springboot.ecommerce.authenticate.dto.RefreshRequest;
@@ -163,9 +164,11 @@ public class AuthenticationService {
 
         long remainingTime = SignedJWT.parse(token).getJWTClaimsSet().getExpirationTime().getTime() - System.currentTimeMillis();
 
+        String nameRole = user.getRoles().stream().findFirst().map(Role::getName).orElse("USER");
 
         return AuthenticationResponse.builder()
                 .token(token)
+                .nameRole(nameRole)
                 .expiryTime(remainingTime)
                 .build();
     }
