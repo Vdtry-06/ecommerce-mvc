@@ -38,11 +38,6 @@ public class ProductService {
             throw new AppException(ErrorCode.PRODUCT_NAME_EXISTS);
         }
 
-        String imageUrl = null;
-        if (request.getFile() != null && !request.getFile().isEmpty()) {
-            imageUrl = cloudinaryService.uploadFile(request.getFile(), "E-commerce/products/" + request.getName());
-        }
-
         if(request.getAvailableQuantity() < 0) {
             throw new AppException(ErrorCode.NEGATIVE_QUANTITY);
         }
@@ -58,8 +53,13 @@ public class ProductService {
 
         Product product = productMapper.toProduct(request);
         product.setCategories(categories);
-        product.setImageUrl(imageUrl);
 
+        String imageUrl = null;
+        if (request.getFile() != null && !request.getFile().isEmpty()) {
+            imageUrl = cloudinaryService.uploadFile(request.getFile(), "E-commerce/products/" + request.getName());
+        }
+
+        product.setImageUrl(imageUrl);
 
         Set<Topping> toppings = request.getToppingNames().stream()
                 .map(toppingName -> toppingRepository.findByName(toppingName)
