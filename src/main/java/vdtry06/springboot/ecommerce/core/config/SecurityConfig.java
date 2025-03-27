@@ -49,12 +49,10 @@ public class SecurityConfig  {
 
                 // cấu hình phân quyền public_endpoint: không cần xác thực
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers(HttpMethod.GET, "/payment/vn-pay-callback")
-                        .permitAll()
-                        .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS)
-                        .permitAll()
-                        .anyRequest()
-                        .authenticated())
+                        .requestMatchers(HttpMethod.GET, "/payment/vn-pay-callback").permitAll()
+                        .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/payment/vn-pay-selected").permitAll()
+                        .anyRequest().authenticated())
 
                 // cấu hình oauth2: xác thực jwt nếu lỗi xác thực thì vào class entrypoint xử lý lỗi
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer

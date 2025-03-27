@@ -46,13 +46,9 @@ public class PaymentService {
         Order order = orderRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
-        if(OrderStatus.PAID.equals(order.getStatus())) {
+        if (OrderStatus.PAID.equals(order.getStatus())) {
             throw new AppException(ErrorCode.ORDER_ALREADY_PAID);
         }
-
-//        if(OrderStatus.CANCELLED.equals(order.getStatus())) {
-//            throw new AppException(ErrorCode.ORDER_ALREADY_CANCELLED);
-//        }
 
         PaymentMethod paymentMethod = request.getPaymentMethod();
 
@@ -67,12 +63,12 @@ public class PaymentService {
 
         updateProductQuantity(order, false);
 
-        if(paymentMethod == PaymentMethod.CASH_ON_DELIVERY) {
+        if (paymentMethod == PaymentMethod.CASH_ON_DELIVERY) {
             order.setStatus(OrderStatus.PENDING);
         } else {
             order.setStatus(OrderStatus.PAID);
             User user = order.getUser();
-            if(user != null) {
+            if (user != null) {
                 notificationService.createPaymentNotification(user, payment);
             } else {
                 log.warn("Order {} has no associated user, skipping notification.", order.getId());
@@ -84,28 +80,36 @@ public class PaymentService {
         return paymentMapper.toPaymentResponse(payment);
     }
 
-    public VNPayResponse createVNPayPayment(HttpServletRequest request, Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-
-        if(OrderStatus.PAID.equals(order.getStatus())) {
-            throw new AppException(ErrorCode.ORDER_ALREADY_PAID);
+    @Transactional
+    public VNPayResponse createVNPayPaymentForSelectedItems(HttpServletRequest request, List<OrderLine> selectedOrderLines, Long userId) {
+        if (selectedOrderLines == null || selectedOrderLines.isEmpty()) {
+            throw new AppException(ErrorCode.NO_ITEMS_SELECTED);
         }
 
-        BigDecimal totalPrice = order.getTotalPrice();
-        System.out.println("DEBUG: Total price = " + totalPrice);
+        BigDecimal totalPrice = selectedOrderLines.stream()
+                .map(OrderLine::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        Order newOrder = new Order();
+        newOrder.setUser(User.builder().id(userId).build());
+        newOrder.setOrderLines(selectedOrderLines);
+        newOrder.setTotalPrice(totalPrice);
+        newOrder.setStatus(OrderStatus.PENDING);
+
+        // Gán newOrder cho từng OrderLine
+        selectedOrderLines.forEach(orderLine -> orderLine.setOrder(newOrder));
+
+        orderRepository.save(newOrder);
 
         long amount = totalPrice.multiply(BigDecimal.valueOf(100)).longValue();
-        System.out.println("DEBUG: Amount sent to VNPay = " + amount);
-
-        String backCode = request.getParameter("bankCode");
+        String bankCode = request.getParameter("bankCode");
 
         Map<String, String> vnpParamsMap = vnpayConfig.getVNPAYConfig();
         vnpParamsMap.put("vnp_Amount", String.valueOf(amount));
-        vnpParamsMap.put("vnp_TxnRef", String.valueOf(orderId));
+        vnpParamsMap.put("vnp_TxnRef", String.valueOf(newOrder.getId()));
 
-        if(backCode != null && !backCode.isEmpty()) {
-            vnpParamsMap.put("vnp_BankCode", backCode);
+        if (bankCode != null && !bankCode.isEmpty()) {
+            vnpParamsMap.put("vnp_BankCode", bankCode);
         }
 
         vnpParamsMap.put("vnp_IpAddr", VNPayUtil.getIpAddress(request));
@@ -144,22 +148,18 @@ public class PaymentService {
         }
     }
 
-
-
     @Transactional
     public void cancelPayment(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
-        if(OrderStatus.CANCELLED.equals(order.getStatus())) {
+        if (OrderStatus.CANCELLED.equals(order.getStatus())) {
             throw new AppException(ErrorCode.ORDER_ALREADY_CANCELLED);
         }
 
-        if(!OrderStatus.PAID.equals(order.getStatus())) {
+        if (!OrderStatus.PAID.equals(order.getStatus())) {
             throw new AppException(ErrorCode.ORDER_NOT_PAID);
         }
-
-
 
         updateProductQuantity(order, true);
 
@@ -172,9 +172,9 @@ public class PaymentService {
     private void updateProductQuantity(Order order, boolean isRestoring) {
         List<OrderLine> orderLines = order.getOrderLines();
 
-        for(OrderLine orderLine : orderLines) {
+        for (OrderLine orderLine : orderLines) {
             Product product = orderLine.getProduct();
-            if(isRestoring) {
+            if (isRestoring) {
                 product.setAvailableQuantity(product.getAvailableQuantity() + orderLine.getQuantity());
             } else {
                 product.setAvailableQuantity(product.getAvailableQuantity() - orderLine.getQuantity());
