@@ -18,19 +18,19 @@ import java.time.LocalDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Table(name = "notification")
 public class Notification {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        Long id;
 
-    @Enumerated(EnumType.STRING)
-    NotificationType type;
+        @Enumerated(EnumType.STRING)
+        NotificationType type;
 
-    LocalDateTime notificationDate;
+        LocalDateTime notificationDate;
 
-    @OneToOne
-    @JoinColumn(name = "order_id", referencedColumnName = "id")
-    Order order;
+        @OneToOne
+        @JoinColumn(name = "order_id", referencedColumnName = "id")
+        Order order;
 
-    @OneToOne(mappedBy = "notification")
-    Payment payment;
+        @OneToOne(mappedBy = "notification")
+        Payment payment;
 }
