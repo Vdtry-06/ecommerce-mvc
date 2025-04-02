@@ -7,26 +7,42 @@ spring:
   datasource:
     driverClassName: "com.mysql.cj.jdbc.Driver"
     url: jdbc:mysql://localhost:3306/ecommerce?createDatabaseIfNotExist=true
-    username: ${DBMS_USERNAME:root}
-    password: ${DBMS_PASSWORD:root}
+    username: ${DBMS_USERNAME}
+    password: ${DBMS_PASSWORD}
 
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
 
-
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME:tunhoipro0306@gmail.com}
-    password: ${APP_PASSWORD:oaemtsflhzmmkyvt}
+    username: ${MAIL_USERNAME}
+    password: ${APP_PASSWORD}
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+            scope:
+              - read:user
+              - user:email
 
   kafka:
     bootstrap-servers: localhost:9092
@@ -48,22 +64,22 @@ spring:
           model: deepseek-r1:latest
 
 jwt:
-  signerKey: "${JWT_SIGNER_KEY:RAsYCHqWHo6orr2tDWLa0s/WArybK+lyoqSQzNAj1/iFzUOqOH4tzDVQlEV0CEPp}"
+  signerKey: "${JWT_SIGNER_KEY}"
   valid-duration: ${JWT_VALID_DURATION:3600} # in seconds
   refreshable-duration: ${JWT_REFRESH_DURATION:36000} # in seconds
   expiration-time: 360000
 
 payment:
   vnPay:
-    url: ${PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
-    tmnCode: ${TMN_CODE:XSUKKR24}
-    secretKey: ${SECRET_KEY:V4O2IMZ5FYU0RMRYTBNO0CWO94RU1DIE}
+    url: ${PAY_URL}
+    tmnCode: ${TMN_CODE}
+    secretKey: ${SECRET_KEY}
     returnUrl: ${RETURN_URL:http://localhost:8080/api/v1/payment/vn-pay-callback}
     version: ${VERSION:2.1.0}
     command: ${COMMAND:pay}
     orderType: ${ORDER_TYPE:other}
 
 cloudinary:
-  cloud_name: ${CLOUDINARY_CLOUD_NAME:vdtry06}
-  api_key: ${CLOUDINARY_API_KEY:859264931478151}
-  api_secret: ${CLOUDINARY_API_SECRET:DglGdkmrIsKzbG58Kn_CoyLUlpk}
+  cloud_name: ${CLOUDINARY_CLOUD_NAME}
+  api_key: ${CLOUDINARY_API_KEY}
+  api_secret: ${CLOUDINARY_API_SECRET}
