@@ -3,6 +3,7 @@ package vdtry06.springboot.ecommerce.config;
 import java.util.List;
 
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,21 +24,37 @@ import vdtry06.springboot.ecommerce.service.CustomOAuth2UserService;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class SecurityConfig {
-    private static final String[] PUBLIC_ENDPOINTS = {
-            "/users", "/auth/**", "/addresses", "/orders", "/auth/oauth2/success"
+    private static final String[] PUBLIC_POST_ENDPOINTS = {
+            "/users",
+            "/auth/**",
+            "/addresses",
+            "/orders",
+            "/auth/oauth2/success",
+    };
+
+    private static final String [] PUBLIC_GET_ENDPOINTS = {
+            "/product/get-all",
+            "/product/get/**",
+            "/product/categories/filter",
+            "/category/get-categories",
+            "/category/get-category/**",
     };
 
     private final CustomJwtDecoder customJwtDecoder;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final CustomOAuth2UserService customOAuth2UserService;
 
-    public SecurityConfig(CustomJwtDecoder customJwtDecoder, OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler, CustomOAuth2UserService customOAuth2UserService) {
-        this.customJwtDecoder = customJwtDecoder;
-        this.oAuth2LoginSuccessHandler = oAuth2LoginSuccessHandler;
-        this.customOAuth2UserService = customOAuth2UserService;
-    }
+//    public SecurityConfig(
+//            CustomJwtDecoder customJwtDecoder,
+//            OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
+//            CustomOAuth2UserService customOAuth2UserService) {
+//        this.customJwtDecoder = customJwtDecoder;
+//        this.oAuth2LoginSuccessHandler = oAuth2LoginSuccessHandler;
+//        this.customOAuth2UserService = customOAuth2UserService;
+//    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
@@ -46,8 +63,9 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(request -> request
                         .requestMatchers(HttpMethod.GET, "/payment/vn-pay-callback").permitAll()
-                        .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/payment/vn-pay-selected").permitAll()
+                        .requestMatchers(HttpMethod.POST, PUBLIC_POST_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.GET, PUBLIC_GET_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/payment/vn-pay-selected").permitAll()
                         .anyRequest().authenticated())
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
