@@ -82,7 +82,7 @@ public class UserService {
         return userRepository.findAll().stream().map(userMapper::toUserResponse).toList();
     }
 
-    @PostAuthorize("returnObject.username == authentication.name")
+    @PostAuthorize("hasRole('ADMIN') or returnObject.username == authentication.name")
     public UserResponse getUser(Long userId) {
         log.info("Getting user with id: " + userId);
         return userMapper.toUserResponse(
@@ -112,6 +112,19 @@ public class UserService {
                         orderLine.getProduct().getId()));
 
         return userMapper.toUserInfoResponse((user));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserInfoResponse getUserInfoById(Long userId) {
+        log.info("Admin fetching user info with id: " + userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        user.getOrders().forEach(order ->
+                order.getOrderLines().forEach(orderLine ->
+                        orderLine.getProduct().getId()));
+
+        return userMapper.toUserInfoResponse(user);
     }
 
     public Long getCurrentUserId() {

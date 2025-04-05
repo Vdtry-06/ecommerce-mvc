@@ -46,7 +46,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         String email = oAuth2User.getAttribute("email");
         if (email == null || !email.contains("@gmail.com")) {
-            email = login + "@github.user";
+            email = login + "@github.com";
         }
 
         Optional<User> userOptional = userRepository.findByEmail(email);
@@ -109,7 +109,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         } else {
             user = new User();
             user.setEmail(email);
-            user.setUsername(email);
+            user.setUsername(email.substring(0, email.indexOf("@")));
             user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
             user.setProvider(OAuthProvider.GOOGLE);
             user.setEnabled(true);

@@ -5,6 +5,7 @@ import lombok.experimental.FieldDefaults;
 import vdtry06.springboot.ecommerce.constant.OrderStatus;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -18,4 +19,6 @@ public class OrderResponse {
     OrderStatus status;
     BigDecimal totalPrice;
     List<OrderLineResponse> orderLines;
+    LocalDateTime createdDate;
+    LocalDateTime lastModifiedDate;
 }

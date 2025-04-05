@@ -69,4 +69,13 @@ public class UserController {
                 .message("Fetched user information successfully")
                 .build();
     }
+
+    @GetMapping("/users/{userId}/info")
+    public ApiResponse<UserInfoResponse> getUserInfoById(@PathVariable Long userId) {
+        UserInfoResponse userInfo = userService.getUserInfoById(userId);
+        return ApiResponse.<UserInfoResponse>builder()
+                .data(userInfo)
+                .message("Fetched user information successfully")
+                .build();
+    }
 }
