@@ -9,8 +9,8 @@ import vdtry06.springboot.ecommerce.constant.PaymentMethod;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
-import static jakarta.persistence.EnumType.STRING;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -28,17 +28,15 @@ public class Payment {
     String reference;
     BigDecimal amount;
 
-    @Enumerated(STRING)
+    @Enumerated(EnumType.STRING)
     PaymentMethod paymentMethod;
 
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "notification_id", referencedColumnName = "id")
-    Notification notification;
+    @ManyToOne
+    @JoinColumn(name = "order_id", nullable = false)
+    Order order; // Quan hệ N - 1 với Order
 
-    @OneToOne
-    @JoinColumn(name = "order_id", referencedColumnName = "id")
-    Order order;
-
+    @OneToMany(mappedBy = "payment", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<Notification> notifications = new ArrayList<>();
 
     @CreatedDate
     @Column(updatable = false, nullable = false)

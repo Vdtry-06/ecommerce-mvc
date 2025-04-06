@@ -25,10 +25,11 @@ public class Notification {
 
         LocalDateTime notificationDate;
 
-        @OneToOne
-        @JoinColumn(name = "order_id", referencedColumnName = "id")
+        @ManyToOne
+        @JoinColumn(name = "order_id", nullable = false)
         Order order;
 
-        @OneToOne(mappedBy = "notification")
+        @ManyToOne
+        @JoinColumn(name = "payment_id", nullable = true)
         Payment payment;
 }

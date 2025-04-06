@@ -58,6 +58,7 @@ public enum ErrorCode {
     REVIEW_NOT_EXISTED(1059, "Review does not exist", HttpStatus.BAD_REQUEST),
     REVIEW_ALREADY_EXISTS(1060, "Review already exists", HttpStatus.BAD_REQUEST),
     NO_ITEMS_SELECTED(1061, "No items selected", HttpStatus.BAD_REQUEST ),
+    UNEXPECTED_ERROR(1062, "Unexpected error", HttpStatus.INTERNAL_SERVER_ERROR),
     ;
 
     private final int code;

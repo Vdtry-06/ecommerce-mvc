@@ -5,6 +5,7 @@ import lombok.experimental.FieldDefaults;
 import vdtry06.springboot.ecommerce.constant.OrderStatus;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -14,8 +15,12 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OrderResponse {
     Long id;
-    Long userId;
     OrderStatus status;
     BigDecimal totalPrice;
+    Long userId;
     List<OrderLineResponse> orderLines;
+    List<PaymentResponse> payments;
+    List<NotificationResponse> notifications;
+    LocalDateTime createdDate;
+    LocalDateTime lastModifiedDate;
 }

@@ -51,6 +51,8 @@ public class OrderService {
                 .status(OrderStatus.PENDING)
                 .totalPrice(BigDecimal.ZERO)
                 .orderLines(new ArrayList<>())
+                .payments(new ArrayList<>())
+                .notifications(new ArrayList<>())
                 .build();
 
         orderRepository.save(order);
@@ -100,42 +102,11 @@ public class OrderService {
 
     public List<OrderResponse> deleteOrder(Long orderId) {
         OrderResponse orderResponse = getOrderById(orderId);
-        if(orderResponse.getStatus() == OrderStatus.PENDING) {
+        if (orderResponse.getStatus() == OrderStatus.PENDING) {
             orderRepository.deleteById(orderId);
             return getAllOrders();
         } else {
             throw new AppException(ErrorCode.ORDER_STATE_PENDING);
         }
     }
-
-//    @Transactional
-//    public OrderResponse updateOrderStatusToPaid(Long orderId) {
-//        Order order = orderRepository.findById(orderId)
-//                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-//
-//        if(order.getStatus() == OrderStatus.PAID) {
-//            throw new AppException(ErrorCode.ORDER_ALREADY_PAID);
-//        }
-//        order.setStatus(OrderStatus.PAID);
-//        Order updatedOrder = orderRepository.save(order);
-//
-//        return orderMapper.toOrderResponse(updatedOrder);
-//    }
-//
-//    @Transactional
-//    public OrderResponse updateOrderStatusToDelivered(Long orderId) {
-//        Order order = orderRepository.findById(orderId)
-//                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-//
-//        if(order.getStatus() != OrderStatus.SHIPPED) {
-//            throw new AppException(ErrorCode.INVALID_ORDER_STATUS);
-//        }
-//
-//        order.setStatus(OrderStatus.DELIVERED);
-//        Order updatedOrder = orderRepository.save(order);
-//
-//        notificationService.createDeliveredNotification(order);
-//
-//        return orderMapper.toOrderResponse(updatedOrder);
-//    }
 }

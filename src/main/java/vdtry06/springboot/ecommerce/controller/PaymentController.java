@@ -39,6 +39,7 @@ public class PaymentController {
 
     @PostMapping
     public ApiResponse<PaymentResponse> createPayment(@RequestBody PaymentRequest paymentRequest) {
+        log.info("Creating payment for orderId: {}", paymentRequest.getOrderId());
         PaymentResponse paymentResponse = paymentService.createPayment(paymentRequest);
         return ApiResponse.<PaymentResponse>builder()
                 .message("Payment created successfully")
@@ -48,13 +49,16 @@ public class PaymentController {
 
     @PostMapping("/vn-pay-selected")
     public ApiResponse<VNPayResponse> paySelectedItems(HttpServletRequest request, @RequestBody Map<String, Object> body) {
+        log.info("Requesting VNPay payment for selected items");
+
         Long userId = ((Number) body.get("userId")).longValue();
         List<Map<String, Object>> orderLinesData = (List<Map<String, Object>>) body.get("orderLines");
 
         if (orderLinesData == null || orderLinesData.isEmpty()) {
+            log.warn("No items selected for payment");
             return ApiResponse.<VNPayResponse>builder()
-                    .code(400)
-                    .message("No items selected for payment")
+                    .code(ErrorCode.NO_ITEMS_SELECTED.getCode())
+                    .message(ErrorCode.NO_ITEMS_SELECTED.getMessage())
                     .build();
         }
 
@@ -78,30 +82,45 @@ public class PaymentController {
         String status = request.getParameter("vnp_ResponseCode");
         String txnRef = request.getParameter("vnp_TxnRef");
 
-        log.info("VN payment callback txnRef (orderId): " + txnRef);
+        log.info("VN payment callback received with txnRef (orderId): {}", txnRef);
 
         if (txnRef == null || txnRef.isEmpty()) {
+            log.error("txnRef is null or empty");
             return ResponseEntity.badRequest().build();
         }
 
-        Long orderId = Long.parseLong(txnRef);
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+        try {
+            Long orderId = Long.parseLong(txnRef);
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> {
+                        log.error("Order not found for orderId: {}", orderId);
+                        return new AppException(ErrorCode.ORDER_NOT_FOUND);
+                    });
 
-        if ("00".equals(status)) {
-            paymentService.updateOrderToPaid(order);
-            return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create("http://localhost:3000/"))
-                    .build();
-        } else {
-            return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create("http://localhost:3000/checkout?error=payment_failed"))
-                    .build();
+            if ("00".equals(status)) {
+                log.info("Payment successful for orderId: {}", orderId);
+                paymentService.updateOrderToPaid(order);
+                return ResponseEntity.status(HttpStatus.FOUND)
+                        .location(URI.create("http://localhost:3000/?payment=success")) // Redirect với thông báo thành công
+                        .build();
+            } else {
+                log.warn("Payment failed for orderId: {} with response code: {}", orderId, status);
+                return ResponseEntity.status(HttpStatus.FOUND)
+                        .location(URI.create("http://localhost:3000/checkout?error=payment_failed")) // Redirect với thông báo lỗi
+                        .build();
+            }
+        } catch (NumberFormatException e) {
+            log.error("Invalid txnRef format: {}", txnRef, e);
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error processing VNPay callback for txnRef: {}", txnRef, e);
+            throw new AppException(ErrorCode.UNEXPECTED_ERROR);
         }
     }
 
     @PutMapping("/{orderId}/cancel")
     public ApiResponse<Void> cancelPayment(@PathVariable Long orderId) {
+        log.info("Canceling payment for orderId: {}", orderId);
         paymentService.cancelPayment(orderId);
         return ApiResponse.<Void>builder()
                 .message("Payment canceled successfully")
