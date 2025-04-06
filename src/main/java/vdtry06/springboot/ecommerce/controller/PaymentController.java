@@ -16,8 +16,6 @@ import vdtry06.springboot.ecommerce.service.PaymentService;
 import vdtry06.springboot.ecommerce.repository.OrderRepository;
 import vdtry06.springboot.ecommerce.service.OrderService;
 import vdtry06.springboot.ecommerce.entity.OrderLine;
-import vdtry06.springboot.ecommerce.dto.response.PaymentResponse;
-import vdtry06.springboot.ecommerce.dto.request.PaymentRequest;
 import vdtry06.springboot.ecommerce.dto.response.VNPayResponse;
 import vdtry06.springboot.ecommerce.entity.Product;
 
@@ -37,74 +35,103 @@ public class PaymentController {
     OrderRepository orderRepository;
     OrderService orderService;
 
-    @PostMapping
-    public ApiResponse<PaymentResponse> createPayment(@RequestBody PaymentRequest paymentRequest) {
-        PaymentResponse paymentResponse = paymentService.createPayment(paymentRequest);
-        return ApiResponse.<PaymentResponse>builder()
-                .message("Payment created successfully")
-                .data(paymentResponse)
-                .build();
-    }
-
     @PostMapping("/vn-pay-selected")
     public ApiResponse<VNPayResponse> paySelectedItems(HttpServletRequest request, @RequestBody Map<String, Object> body) {
-        Long userId = ((Number) body.get("userId")).longValue();
-        List<Map<String, Object>> orderLinesData = (List<Map<String, Object>>) body.get("orderLines");
+        try {
+            Long userId = ((Number) body.get("userId")).longValue();
+            List<Map<String, Object>> orderLinesData = (List<Map<String, Object>>) body.get("orderLines");
 
-        if (orderLinesData == null || orderLinesData.isEmpty()) {
+            if (orderLinesData == null || orderLinesData.isEmpty()) {
+                return ApiResponse.<VNPayResponse>builder()
+                        .code(400)
+                        .message("No items selected for payment")
+                        .build();
+            }
+
+            List<OrderLine> selectedOrderLines = orderLinesData.stream().map(data -> {
+                OrderLine orderLine = new OrderLine();
+                Long productId = ((Number) data.get("productId")).longValue();
+                Integer quantity = ((Number) data.get("quantity")).intValue();
+                BigDecimal price = new BigDecimal(data.get("price").toString());
+
+                orderLine.setProduct(Product.builder().id(productId).build());
+                orderLine.setQuantity(quantity);
+                orderLine.setPrice(price);
+
+                log.info("Processing order line: productId={}, quantity={}, price={}", productId, quantity, price);
+                return orderLine;
+            }).collect(Collectors.toList());
+
+            VNPayResponse vnPayResponse = paymentService.createVNPayPaymentForSelectedItems(request, selectedOrderLines, userId);
+
             return ApiResponse.<VNPayResponse>builder()
-                    .code(400)
-                    .message("No items selected for payment")
+                    .message("VN payment requested for selected items")
+                    .data(vnPayResponse)
+                    .build();
+        } catch (Exception e) {
+            log.error("Error processing payment request: {}", e.getMessage(), e);
+            return ApiResponse.<VNPayResponse>builder()
+                    .code(500)
+                    .message("Error processing payment: " + e.getMessage())
                     .build();
         }
-
-        List<OrderLine> selectedOrderLines = orderLinesData.stream().map(data -> {
-            OrderLine orderLine = new OrderLine();
-            orderLine.setProduct(Product.builder().id(((Number) data.get("productId")).longValue()).build());
-            orderLine.setQuantity(((Number) data.get("quantity")).intValue());
-            orderLine.setPrice(new BigDecimal(data.get("price").toString()));
-            return orderLine;
-        }).collect(Collectors.toList());
-
-        VNPayResponse vnPayResponse = paymentService.createVNPayPaymentForSelectedItems(request, selectedOrderLines, userId);
-        return ApiResponse.<VNPayResponse>builder()
-                .message("VN payment requested for selected items")
-                .data(vnPayResponse)
-                .build();
     }
 
     @GetMapping("/vn-pay-callback")
     public ResponseEntity<Void> payCallback(HttpServletRequest request) {
-        String status = request.getParameter("vnp_ResponseCode");
-        String txnRef = request.getParameter("vnp_TxnRef");
+        try {
+            String status = request.getParameter("vnp_ResponseCode");
+            String txnRef = request.getParameter("vnp_TxnRef");
 
-        log.info("VN payment callback txnRef (orderId): " + txnRef);
+            log.info("VN payment callback received: status={}, txnRef={}", status, txnRef);
 
-        if (txnRef == null || txnRef.isEmpty()) {
-            return ResponseEntity.badRequest().build();
-        }
+            if (txnRef == null || txnRef.isEmpty()) {
+                log.error("Invalid transaction reference in callback");
+                return ResponseEntity.badRequest().build();
+            }
 
-        Long orderId = Long.parseLong(txnRef);
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+            Long orderId = Long.parseLong(txnRef);
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> {
+                        log.error("Order not found: {}", orderId);
+                        return new AppException(ErrorCode.ORDER_NOT_FOUND);
+                    });
 
-        if ("00".equals(status)) {
-            paymentService.updateOrderToPaid(order);
+            if ("00".equals(status)) {
+                log.info("Payment successful for order: {}", orderId);
+                paymentService.updateOrderToPaid(order);
+                return ResponseEntity.status(HttpStatus.FOUND)
+                        .location(URI.create("http://localhost:3000/"))
+                        .build();
+            } else {
+                log.warn("Payment failed for order: {}, status: {}", orderId, status);
+                return ResponseEntity.status(HttpStatus.FOUND)
+                        .location(URI.create("http://localhost:3000/checkout?error=payment_failed"))
+                        .build();
+            }
+        } catch (Exception e) {
+            log.error("Error processing payment callback: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create("http://localhost:3000/"))
-                    .build();
-        } else {
-            return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create("http://localhost:3000/checkout?error=payment_failed"))
+                    .location(URI.create("http://localhost:3000/checkout?error=system_error"))
                     .build();
         }
     }
 
     @PutMapping("/{orderId}/cancel")
     public ApiResponse<Void> cancelPayment(@PathVariable Long orderId) {
-        paymentService.cancelPayment(orderId);
-        return ApiResponse.<Void>builder()
-                .message("Payment canceled successfully")
-                .build();
+        try {
+            log.info("Cancelling payment for order: {}", orderId);
+            paymentService.cancelPayment(orderId);
+            return ApiResponse.<Void>builder()
+                    .message("Payment canceled successfully")
+                    .build();
+        } catch (Exception e) {
+            log.error("Error cancelling payment: {}", e.getMessage(), e);
+            return ApiResponse.<Void>builder()
+                    .code(500)
+                    .message("Error cancelling payment: " + e.getMessage())
+                    .build();
+        }
     }
 }
+

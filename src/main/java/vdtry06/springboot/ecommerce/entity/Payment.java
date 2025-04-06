@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import vdtry06.springboot.ecommerce.constant.PaymentMethod;
 
 import java.math.BigDecimal;
@@ -20,6 +21,7 @@ import static jakarta.persistence.EnumType.STRING;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Table(name = "payment")
+@EntityListeners(AuditingEntityListener.class)
 public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,7 +33,7 @@ public class Payment {
     @Enumerated(STRING)
     PaymentMethod paymentMethod;
 
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, optional = false)
     @JoinColumn(name = "notification_id", referencedColumnName = "id")
     Notification notification;
 
