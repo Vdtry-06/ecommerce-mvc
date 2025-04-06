@@ -25,17 +25,26 @@ public class NotificationService {
     KafkaProducerService kafkaProducerService;
 
     @Transactional
-    public void createPaymentNotification(User user, Payment payment) {
+    public void createPaymentNotification(User user, Payment payment, Order order) {
         Notification notification = Notification.builder()
                 .type(NotificationType.PAYMENT_CONFIRMATION)
                 .notificationDate(LocalDateTime.now())
                 .payment(payment)
+                .order(order)
                 .build();
 
         notificationRepository.save(notification);
 
+        if (payment.getNotifications() == null) {
+            payment.setNotifications(new java.util.ArrayList<>());
+        }
+        payment.getNotifications().add(notification);
 
-        // Gửi thông báo qua Kafka
+        if (order.getNotifications() == null) {
+            order.setNotifications(new java.util.ArrayList<>());
+        }
+        order.getNotifications().add(notification);
+
         NotificationRequest notificationRequest = NotificationRequest.builder()
                 .orderReference(payment.getReference())
                 .amount(payment.getAmount())
@@ -47,16 +56,23 @@ public class NotificationService {
         kafkaProducerService.sendNotification(notificationRequest);
     }
 
+    @Transactional
     public void cancelPaymentedNotification(Order order) {
         Notification notification = Notification.builder()
                 .type(NotificationType.PAYMENT_CANCELLATION)
-                .notificationDate(order.getLastModifiedDate())
+                .notificationDate(LocalDateTime.now())
                 .order(order)
                 .build();
 
         notificationRepository.save(notification);
+
+        if (order.getNotifications() == null) {
+            order.setNotifications(new java.util.ArrayList<>());
+        }
+        order.getNotifications().add(notification);
     }
 
+    @Transactional
     public void createDeliveredNotification(Order order) {
         Notification notification = Notification.builder()
                 .type(NotificationType.DELIVERY_CONFIRMATION)
@@ -65,5 +81,11 @@ public class NotificationService {
                 .build();
 
         notificationRepository.save(notification);
+
+        if (order.getNotifications() == null) {
+            order.setNotifications(new java.util.ArrayList<>());
+        }
+        order.getNotifications().add(notification);
     }
 }
+

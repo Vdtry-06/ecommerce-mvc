@@ -58,7 +58,7 @@ public class PaymentController {
                 orderLine.setQuantity(quantity);
                 orderLine.setPrice(price);
 
-                log.info("Processing order line: productId={}, quantity={}, price={}", productId, quantity, price);
+                log.info("Processing order line for payment: productId={}, quantity={}, price={}", productId, quantity, price);
                 return orderLine;
             }).collect(Collectors.toList());
 

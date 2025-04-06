@@ -10,6 +10,8 @@ import vdtry06.springboot.ecommerce.constant.PaymentMethod;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import static jakarta.persistence.EnumType.STRING;
 
@@ -33,14 +35,12 @@ public class Payment {
     @Enumerated(STRING)
     PaymentMethod paymentMethod;
 
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, optional = false)
-    @JoinColumn(name = "notification_id", referencedColumnName = "id")
-    Notification notification;
-
-    @OneToOne
-    @JoinColumn(name = "order_id", referencedColumnName = "id")
+    @ManyToOne
+    @JoinColumn(name = "order_id")
     Order order;
 
+    @OneToMany(mappedBy = "payment", cascade = CascadeType.ALL)
+    List<Notification> notifications = new ArrayList<>();
 
     @CreatedDate
     @Column(updatable = false, nullable = false)
@@ -60,3 +60,4 @@ public class Payment {
         this.lastModifiedDate = LocalDateTime.now();
     }
 }
+

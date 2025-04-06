@@ -31,8 +31,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -58,56 +56,25 @@ public class PaymentService {
                 .map(OrderLine::getPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        User user = User.builder().id(userId).build();
+
         List<Order> pendingOrders = orderRepository.findByUserIdAndStatus(userId, OrderStatus.PENDING);
-        Order order;
+        Order existingPendingOrder = pendingOrders.isEmpty() ? null : pendingOrders.get(0);
 
-        if (!pendingOrders.isEmpty()) {
-            order = pendingOrders.get(0);
-            log.info("Using existing pending order: {}", order.getId());
-
-            if (order.getOrderLines() != null && !order.getOrderLines().isEmpty()) {
-                List<OrderLine> existingLines = new ArrayList<>(order.getOrderLines());
-                for (OrderLine line : existingLines) {
-                    order.getOrderLines().remove(line);
-                    orderLineRepository.delete(line);
-                }
-            }
+        Order paymentOrder;
+        if (existingPendingOrder != null) {
+            paymentOrder = createNewOrderForPayment(user, selectedOrderLines, totalPrice);
+            removeSelectedItemsFromOrder(existingPendingOrder, selectedOrderLines);
         } else {
-            order = new Order();
-            order.setUser(User.builder().id(userId).build());
-            order.setOrderLines(new ArrayList<>());
-            order.setStatus(OrderStatus.PENDING);
-            log.info("Creating new order for user: {}", userId);
+            paymentOrder = createNewOrderForPayment(user, selectedOrderLines, totalPrice);
         }
-
-        order.setTotalPrice(totalPrice);
-
-        orderRepository.save(order);
-
-        for (OrderLine orderLine : selectedOrderLines) {
-            Product product = productRepository.findById(orderLine.getProduct().getId())
-                    .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
-
-            OrderLine newLine = OrderLine.builder()
-                    .order(order)
-                    .product(product)
-                    .quantity(orderLine.getQuantity())
-                    .price(orderLine.getPrice())
-                    .build();
-
-            orderLineRepository.save(newLine);
-            order.getOrderLines().add(newLine);
-        }
-
-        orderRepository.save(order);
-        log.info("Order prepared for payment: {}", order.getId());
 
         long amount = totalPrice.multiply(BigDecimal.valueOf(100)).longValue();
         String bankCode = request.getParameter("bankCode");
 
         Map<String, String> vnpParamsMap = vnpayConfig.getVNPAYConfig();
         vnpParamsMap.put("vnp_Amount", String.valueOf(amount));
-        vnpParamsMap.put("vnp_TxnRef", String.valueOf(order.getId()));
+        vnpParamsMap.put("vnp_TxnRef", String.valueOf(paymentOrder.getId()));
 
         if (bankCode != null && !bankCode.isEmpty()) {
             vnpParamsMap.put("vnp_BankCode", bankCode);
@@ -129,6 +96,64 @@ public class PaymentService {
                 .build();
     }
 
+    private Order createNewOrderForPayment(User user, List<OrderLine> selectedOrderLines, BigDecimal totalPrice) {
+        Order newOrder = Order.builder()
+                .user(user)
+                .status(OrderStatus.PENDING)
+                .totalPrice(totalPrice)
+                .orderLines(new ArrayList<>())
+                .payments(new ArrayList<>())
+                .notifications(new ArrayList<>())
+                .build();
+
+        orderRepository.save(newOrder);
+        log.info("Created new order for payment: {}", newOrder.getId());
+
+        for (OrderLine orderLine : selectedOrderLines) {
+            Product product = productRepository.findById(orderLine.getProduct().getId())
+                    .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+            OrderLine newLine = OrderLine.builder()
+                    .order(newOrder)
+                    .product(product)
+                    .quantity(orderLine.getQuantity())
+                    .price(orderLine.getPrice())
+                    .build();
+
+            orderLineRepository.save(newLine);
+            newOrder.getOrderLines().add(newLine);
+        }
+
+        orderRepository.save(newOrder);
+        return newOrder;
+    }
+
+    private void removeSelectedItemsFromOrder(Order order, List<OrderLine> selectedOrderLines) {
+        List<Long> selectedProductIds = selectedOrderLines.stream()
+                .map(orderLine -> orderLine.getProduct().getId())
+                .toList();
+
+        List<OrderLine> linesToRemove = order.getOrderLines().stream()
+                .filter(line -> selectedProductIds.contains(line.getProduct().getId()))
+                .toList();
+
+        for (OrderLine line : linesToRemove) {
+            order.getOrderLines().remove(line);
+            orderLineRepository.delete(line);
+        }
+
+        if (order.getOrderLines().isEmpty()) {
+            orderRepository.delete(order);
+            log.info("Deleted empty order: {}", order.getId());
+        } else {
+            order.setTotalPrice(order.getOrderLines().stream()
+                    .map(OrderLine::getPrice)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add));
+            orderRepository.save(order);
+            log.info("Updated remaining order: {}", order.getId());
+        }
+    }
+
     @Transactional
     public void updateOrderToPaid(Order order) {
         if (OrderStatus.PAID.equals(order.getStatus())) {
@@ -138,19 +163,28 @@ public class PaymentService {
 
         try {
             updateProductQuantity(order, false);
+
             Payment payment = Payment.builder()
                     .reference("VNPAY_" + order.getId())
                     .amount(order.getTotalPrice())
                     .paymentMethod(PaymentMethod.VNPAY)
+                    .order(order)
+                    .notifications(new ArrayList<>())
                     .build();
 
             paymentRepository.save(payment);
+
+            if (order.getPayments() == null) {
+                order.setPayments(new ArrayList<>());
+            }
+            order.getPayments().add(payment);
+
             order.setStatus(OrderStatus.PAID);
-            order.setPayment(payment);
             orderRepository.save(order);
+
             User user = order.getUser();
             if (user != null) {
-                notificationService.createPaymentNotification(user, payment);
+                notificationService.createPaymentNotification(user, payment, order);
             } else {
                 log.warn("Order {} has no associated user, skipping notification.", order.getId());
             }
@@ -209,4 +243,3 @@ public class PaymentService {
         }
     }
 }
-

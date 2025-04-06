@@ -25,10 +25,17 @@ public class Notification {
 
         LocalDateTime notificationDate;
 
-        @OneToOne
-        @JoinColumn(name = "order_id", referencedColumnName = "id")
+        @ManyToOne
+        @JoinColumn(name = "order_id")
         Order order;
 
-        @OneToOne(mappedBy = "notification")
+        @ManyToOne
+        @JoinColumn(name = "payment_id")
         Payment payment;
+
+        @PrePersist
+        protected void onCreate() {
+                this.notificationDate = LocalDateTime.now();
+        }
 }
+

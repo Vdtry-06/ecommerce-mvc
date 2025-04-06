@@ -4,29 +4,25 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.mapstruct.factory.Mappers;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vdtry06.springboot.ecommerce.constant.OrderStatus;
 import vdtry06.springboot.ecommerce.entity.Order;
+import vdtry06.springboot.ecommerce.entity.OrderLine;
 import vdtry06.springboot.ecommerce.mapper.OrderMapper;
 import vdtry06.springboot.ecommerce.dto.request.OrderRequest;
 import vdtry06.springboot.ecommerce.dto.response.OrderLineResponse;
 import vdtry06.springboot.ecommerce.dto.response.OrderResponse;
 import vdtry06.springboot.ecommerce.exception.AppException;
 import vdtry06.springboot.ecommerce.exception.ErrorCode;
-import vdtry06.springboot.ecommerce.mapper.OrderLineMapper;
-import vdtry06.springboot.ecommerce.entity.OrderLine;
-import vdtry06.springboot.ecommerce.repository.ProductRepository;
+import vdtry06.springboot.ecommerce.entity.User;
 import vdtry06.springboot.ecommerce.repository.OrderRepository;
 import vdtry06.springboot.ecommerce.repository.UserRepository;
-import vdtry06.springboot.ecommerce.entity.User;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -36,10 +32,7 @@ public class OrderService {
     OrderRepository orderRepository;
     UserRepository userRepository;
     OrderMapper orderMapper;
-    ProductRepository productRepository;
-    NotificationService notificationService;
     OrderLineService orderLineService;
-    OrderLineMapper orderLineMapper;
 
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
@@ -51,6 +44,8 @@ public class OrderService {
                 .status(OrderStatus.PENDING)
                 .totalPrice(BigDecimal.ZERO)
                 .orderLines(new ArrayList<>())
+                .payments(new ArrayList<>())
+                .notifications(new ArrayList<>())
                 .build();
 
         orderRepository.save(order);
@@ -80,7 +75,7 @@ public class OrderService {
     }
 
     public List<OrderResponse> getAllOrdersOfUser(Long userId) {
-        User user = userRepository.findById(userId)
+        userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         List<Order> orders = orderRepository.findByUserId(userId);
@@ -92,21 +87,22 @@ public class OrderService {
 
     @PreAuthorize("hasRole('ADMIN')")
     public List<OrderResponse> getAllOrders() {
-        OrderMapper orderMapper = Mappers.getMapper(OrderMapper.class);
         return orderRepository.findAll().stream()
                 .map(orderMapper::toOrderResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
+    @Transactional
     public List<OrderResponse> deleteOrder(Long orderId) {
         OrderResponse orderResponse = getOrderById(orderId);
-        if(orderResponse.getStatus() == OrderStatus.PENDING) {
+        if (orderResponse.getStatus() == OrderStatus.PENDING) {
             orderRepository.deleteById(orderId);
             return getAllOrders();
         } else {
             throw new AppException(ErrorCode.ORDER_STATE_PENDING);
         }
     }
+}
 
 //    @Transactional
 //    public OrderResponse updateOrderStatusToPaid(Long orderId) {
@@ -138,4 +134,3 @@ public class OrderService {
 //
 //        return orderMapper.toOrderResponse(updatedOrder);
 //    }
-}

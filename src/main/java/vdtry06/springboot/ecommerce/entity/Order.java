@@ -9,6 +9,7 @@ import vdtry06.springboot.ecommerce.constant.OrderStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -24,9 +25,6 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-//    String username;
-//    String email;
-
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
@@ -39,12 +37,11 @@ public class Order {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     List<OrderLine> orderLines;
 
-    @OneToOne
-    @JoinColumn(name = "payment_id", referencedColumnName = "id")
-    Payment payment;
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    List<Payment> payments = new ArrayList<>();
 
-    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    Notification notification;
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    List<Notification> notifications = new ArrayList<>();
 
     @CreatedDate
     @Column(updatable = false, nullable = false)
@@ -64,3 +61,4 @@ public class Order {
         this.lastModifiedDate = LocalDateTime.now();
     }
 }
+
