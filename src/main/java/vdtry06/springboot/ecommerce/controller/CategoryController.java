@@ -36,7 +36,7 @@ public class CategoryController {
                 .build();
     }
 
-    @GetMapping("/get-category/{id}")
+    @GetMapping("/get/{id}")
     public ApiResponse<CategoryResponse> getCategory(@PathVariable Long id) {
         CategoryResponse categoryResponse = categoryService.getCategoryById(id);
         return ApiResponse.<CategoryResponse>builder()
@@ -44,7 +44,7 @@ public class CategoryController {
                 .build();
     }
 
-    @GetMapping("/get-categories")
+    @GetMapping("/get-all")
     public ApiResponse<List<CategoryResponse>> getAllCategories() {
         List<CategoryResponse> categories = categoryService.getAllCategories();
         return ApiResponse.<List<CategoryResponse>>builder()

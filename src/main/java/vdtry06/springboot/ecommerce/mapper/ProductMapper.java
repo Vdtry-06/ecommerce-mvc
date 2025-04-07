@@ -11,7 +11,7 @@ import vdtry06.springboot.ecommerce.dto.response.ProductPurchaseResponse;
 public interface ProductMapper {
     Product toProduct(ProductRequest product);
 
-    @Mapping(target = "categories", source = "categories")
+    @Mapping(target = "category", source = "category")
     @Mapping(target = "toppings", source = "toppings")
     ProductResponse toProductResponse(Product product);
 

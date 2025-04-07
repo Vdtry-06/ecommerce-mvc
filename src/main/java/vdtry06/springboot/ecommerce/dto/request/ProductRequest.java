@@ -17,7 +17,7 @@ public class ProductRequest {
     String description;
     Double availableQuantity;
     BigDecimal price;
-    Set<String> categoryNames;
+    String categoryName;
     MultipartFile file;
     Set<String> toppingNames;
 }

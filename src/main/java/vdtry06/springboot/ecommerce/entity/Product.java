@@ -42,13 +42,9 @@ public class Product {
     )
     Set<Topping> toppings;
 
-    @ManyToMany
-    @JoinTable(
-            name = "product_category",
-            joinColumns = @JoinColumn(name = "product_id"),
-            inverseJoinColumns = @JoinColumn(name = "category_id")
-    )
-    Set<Category> categories;
+    @ManyToOne
+    @JoinColumn(name = "category_id", nullable = false)
+    Category category;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     List<OrderLine> orderLines;

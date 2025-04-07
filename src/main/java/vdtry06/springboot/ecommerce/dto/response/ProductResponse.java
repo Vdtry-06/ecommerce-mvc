@@ -17,7 +17,7 @@ public class ProductResponse {
     String description;
     Double availableQuantity;
     BigDecimal price;
-    Set<CategoryResponse> categories;
+    CategoryResponse category;
     String imageUrl;
     Set<ToppingResponse> toppings;
 }

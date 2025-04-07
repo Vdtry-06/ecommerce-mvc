@@ -4,6 +4,9 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 import vdtry06.springboot.ecommerce.dto.ApiResponse;
 import vdtry06.springboot.ecommerce.service.ProductService;
@@ -68,11 +71,15 @@ public class ProductController {
                 .build();
     }
 
-    @GetMapping("/categories/filter")
-    public ApiResponse<List<ProductResponse>> getProductsByCategories(
-            @RequestParam List<Long> categoryIds) {
-        return ApiResponse.<List<ProductResponse>>builder()
-                .data(productService.getProductsByCategories(categoryIds))
+    @GetMapping("/categories/filter/{categoryId}")
+    public ApiResponse<Page<ProductResponse>> getProductsByCategory(
+            @PathVariable Long categoryId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "8") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<ProductResponse> productPage = productService.getProductsByCategory(categoryId, pageable);
+        return ApiResponse.<Page<ProductResponse>>builder()
+                .data(productPage)
                 .build();
     }
 
