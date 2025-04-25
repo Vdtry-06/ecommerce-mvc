@@ -11,13 +11,14 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+import vdtry06.springboot.ecommerce.dto.response.PaymentConfirmation;
 import vdtry06.springboot.ecommerce.entity.Notification;
 import vdtry06.springboot.ecommerce.entity.Payment;
 import vdtry06.springboot.ecommerce.repository.NotificationRepository;
 import vdtry06.springboot.ecommerce.repository.PaymentRepository;
-import vdtry06.springboot.ecommerce.dto.response.PaymentConfirmation;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static vdtry06.springboot.ecommerce.constant.NotificationType.PAYMENT_CONFIRMATION;
 
@@ -83,12 +84,17 @@ public class KafkaConsumerService {
             );
 
             String customerName = paymentConfirmation.getUsername();
+            List<PaymentConfirmation.OrderLineDetails> orderLineDetails = paymentConfirmation.getOrderLines();
+            if (orderLineDetails == null || orderLineDetails.isEmpty()) {
+                log.warn("No order line details found for payment confirmation: {}", paymentConfirmation.getOrderReference());
+            }
             try {
                 emailService.sendPaymentSuccessEmail(
                         paymentConfirmation.getUserEmail(),
                         customerName,
                         paymentConfirmation.getAmount(),
-                        paymentConfirmation.getOrderReference()
+                        paymentConfirmation.getOrderReference(),
+                        orderLineDetails
                 );
                 log.info("Payment success email sent to {}", paymentConfirmation.getUserEmail());
             } catch (MessagingException e) {
@@ -101,5 +107,4 @@ public class KafkaConsumerService {
             log.error("ERROR - Unexpected error: {}", e.getMessage(), e);
         }
     }
-
 }

@@ -5,6 +5,7 @@ import lombok.experimental.FieldDefaults;
 import vdtry06.springboot.ecommerce.constant.PaymentMethod;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -17,4 +18,18 @@ public class PaymentConfirmation {
     PaymentMethod paymentMethod;
     String username;
     String userEmail;
+    List<OrderLineDetails> orderLines;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @FieldDefaults(level = AccessLevel.PRIVATE)
+    public static class OrderLineDetails {
+        Long productId;
+        Integer quantity;
+        String productImageUrl;
+        String productName;
+        BigDecimal price;
+    }
 }

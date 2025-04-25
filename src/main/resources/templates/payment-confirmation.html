@@ -6,69 +6,143 @@
     <title>Payment Confirmation</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #ffffff;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f4f4f9;
             margin: 0;
             padding: 0;
         }
         .container {
             background-color: #ffffff;
             width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            border: 1px solid #dddddd;
+            max-width: 640px;
+            margin: 20px auto;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
         }
         .header {
-            background: linear-gradient(135deg, #007bff, #0056b3);
+            background: linear-gradient(135deg, #1e90ff, #007bff);
             color: #ffffff;
-            padding: 20px;
-            border-radius: 10px 10px 0 0;
+            padding: 25px;
+            border-radius: 12px 12px 0 0;
             text-align: center;
         }
         .header h2 {
             margin: 0;
-            font-size: 1.6em;
+            font-size: 1.8em;
+            font-weight: 500;
         }
         .content {
-            padding: 20px;
+            padding: 30px;
             text-align: center;
         }
         .content p {
-            font-size: 1em;
-            color: #555555;
+            font-size: 1.1em;
+            color: #444444;
+            line-height: 1.6;
             margin-bottom: 20px;
         }
         .payment-details {
-            background-color: #f9f9f9;
-            padding: 15px 20px;
-            border-radius: 5px;
-            margin: 20px auto;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
             text-align: center;
-            border: 1px solid #dddddd;
+            border: 1px solid #e0e0e0;
         }
         .payment-details h3 {
-            margin: 0 0 10px;
-            font-size: 1.1em;
+            margin: 0 0 12px;
+            font-size: 1.2em;
             color: #333333;
+            font-weight: 500;
         }
         .payment-details p {
-            font-size: 1.4em;
-            font-weight: bold;
+            font-size: 1.5em;
+            font-weight: 600;
             color: #007bff;
             margin: 0;
         }
+        .order-items {
+            margin: 25px 0;
+            text-align: left;
+        }
+        .order-items h3 {
+            font-size: 1.3em;
+            color: #333333;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 500;
+        }
+        .order-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        .order-item img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-right: 20px;
+        }
+        .order-item p {
+            margin: 0;
+            font-size: 1em;
+            color: #444444;
+            line-height: 1.5;
+        }
+        .order-item p strong {
+            color: #222222;
+        }
+        .contact-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 500;
+            margin-top: 20px;
+        }
+        .contact-button:hover {
+            background-color: #0056b3;
+        }
         .footer {
             text-align: center;
-            padding: 10px;
+            padding: 20px;
             font-size: 0.9em;
-            color: #aaaaaa;
-            border-top: 1px solid #f0f0f0;
+            color: #777777;
+            border-top: 1px solid #e0e0e0;
+            margin-top: 20px;
         }
         .footer p {
             margin: 0;
+            line-height: 1.5;
+        }
+        @media only screen and (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            .header {
+                padding: 20px;
+            }
+            .content {
+                padding: 20px;
+            }
+            .order-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .order-item img {
+                margin-bottom: 15px;
+                margin-right: 0;
+            }
         }
     </style>
 </head>
@@ -79,18 +153,31 @@
     </div>
     <div class="content">
         <p>Dear <span th:text="${username}"></span>,</p>
-        <p>Your payment has been successfully processed.</p>
+        <p>Thank you for your purchase! Your payment has been successfully processed.</p>
         <div class="payment-details">
-            <h3>Payment Amount:</h3>
-            <p>$<span th:text="${amount}"></span></p>
-            <h3>Order Reference:</h3>
+            <h3>Payment Amount</h3>
+            <p><span th:text="${#numbers.formatDecimal(amount, 0, 'COMMA', 0, 'POINT')}"></span> VNĐ</p>
+            <h3>Order Reference</h3>
             <p th:text="${orderReference}"></p>
         </div>
-        <p>Thank you for choosing our service. If you have any questions, feel free to contact us.</p>
+        <div class="order-items" th:if="${orderLines != null and not #lists.isEmpty(orderLines)}">
+            <h3>Order Items</h3>
+            <div th:each="item : ${orderLines}" class="order-item">
+                <img th:src="${item.productImageUrl} ?: 'https://res.cloudinary.com/your-cloud-name/image/upload/v1/ecommerce/default-product.png'" th:alt="${item.productName}"/>
+                <div>
+                    <p><strong th:text="${item.productName}"></strong></p>
+                    <p>Quantity: <span th:text="${item.quantity}"></span></p>
+                    <p>Price: <span th:text="${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')}"></span> VNĐ</p>
+                </div>
+            </div>
+        </div>
+        <p th:unless="${orderLines != null and not #lists.isEmpty(orderLines)}">No order items available.</p>
+        <p>We're here to help! If you have any questions, please reach out to us.</p>
+        <a th:href="'mailto:tunhoipro0306@gmail.com?subject=Hỗ trợ đơn hàng ' + ${orderReference} + '&body=Xin chào,%0A%0ATôi có thắc mắc về đơn hàng ' + ${orderReference} + '. Vui lòng hỗ trợ.%0A%0ACảm ơn,'" class="contact-button">Contact Us</a>
     </div>
     <div class="footer">
-        <p>This is an automated message. Please do not reply to this email.</p>
-        <p>&copy; 2025 Ecommerce App. All rights reserved.</p>
+        <p>This is an automated message. Please do not reply directly to this email.</p>
+        <p>© 2025 Ecommerce App. All rights reserved.</p>
     </div>
 </div>
 </body>

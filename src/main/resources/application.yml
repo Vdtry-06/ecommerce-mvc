@@ -59,9 +59,9 @@ spring:
 
 jwt:
   signerKey: "${JWT_SIGNER_KEY}"
-  valid-duration: ${JWT_VALID_DURATION:3600} # in seconds
-  refreshable-duration: ${JWT_REFRESH_DURATION:36000} # in seconds
-  expiration-time: 360000
+  valid-duration: ${JWT_VALID_DURATION:3600} # in seconds 3600
+  refreshable-duration: ${JWT_REFRESH_DURATION:36000} # in seconds 36000
+  expiration-time: 360000 # 360000
 
 payment:
   vnPay:

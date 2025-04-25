@@ -12,9 +12,10 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import vdtry06.springboot.ecommerce.constant.NotificationType;
+import vdtry06.springboot.ecommerce.dto.response.PaymentConfirmation;
 
 import java.math.BigDecimal;
-
+import java.util.List;
 
 @Service
 @AllArgsConstructor
@@ -40,7 +41,8 @@ public class EmailService {
             String destinationEmail,
             String username,
             BigDecimal amount,
-            String orderReference
+            String orderReference,
+            List<PaymentConfirmation.OrderLineDetails> orderLines
     ) throws MessagingException {
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
@@ -50,6 +52,9 @@ public class EmailService {
         context.setVariable("username", username);
         context.setVariable("amount", amount);
         context.setVariable("orderReference", orderReference);
+        context.setVariable("orderLines", orderLines);
+
+        log.info(destinationEmail);
 
         String htmlContent = templateEngine.process(NotificationType.PAYMENT_CONFIRMATION.getTemplate(), context);
         helper.setTo(destinationEmail);
