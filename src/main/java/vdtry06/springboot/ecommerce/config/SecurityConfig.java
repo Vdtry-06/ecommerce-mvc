@@ -33,6 +33,7 @@ public class SecurityConfig {
             "/addresses",
             "/orders",
             "/auth/oauth2/success",
+            "/chatbot/ask",
     };
 
     private static final String [] PUBLIC_GET_ENDPOINTS = {
