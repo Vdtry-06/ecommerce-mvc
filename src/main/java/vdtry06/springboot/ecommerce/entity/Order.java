@@ -26,7 +26,7 @@ public class Order {
     Long id;
 
     @Enumerated(EnumType.STRING)
-    private OrderStatus status;
+    OrderStatus status;
 
     BigDecimal totalPrice;
 
@@ -37,10 +37,10 @@ public class Order {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     List<OrderLine> orderLines;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     List<Payment> payments = new ArrayList<>();
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     List<Notification> notifications = new ArrayList<>();
 
     @CreatedDate

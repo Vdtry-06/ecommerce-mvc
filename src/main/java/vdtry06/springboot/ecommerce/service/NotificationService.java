@@ -42,7 +42,11 @@ public class NotificationService {
                             .map(orderLine -> PaymentConfirmation.OrderLineDetails.builder()
                                     .productId(orderLine.getProduct().getId())
                                     .quantity(orderLine.getQuantity())
-                                    .productImageUrl(orderLine.getProduct().getImageUrl())
+                                    .productImageUrl(
+                                            orderLine.getProduct().getImageUrls().isEmpty()
+                                                    ? "/placeholder.svg"
+                                                    : orderLine.getProduct().getImageUrls().get(0)
+                                    )
                                     .productName(orderLine.getProduct().getName())
                                     .price(orderLine.getPrice())
                                     .build())
@@ -52,6 +56,43 @@ public class NotificationService {
             String message = objectMapper.writeValueAsString(paymentConfirmation);
             kafkaTemplate.send("payment-topic", message);
             log.info("Sent payment confirmation to Kafka for order: {}", payment.getReference());
+
+            Notification existingNotification = order.getNotifications() != null
+                    ? order.getNotifications().stream()
+                    .filter(n -> n.getType() == NotificationType.PAYMENT_CONFIRMATION)
+                    .findFirst()
+                    .orElse(null)
+                    : null;
+
+            if (existingNotification != null) {
+                existingNotification.setNotificationDate(LocalDateTime.now());
+                existingNotification.setPayment(payment);
+                notificationRepository.save(existingNotification);
+                log.info("Updated existing PAYMENT_CONFIRMATION notification for order: {}", order.getId());
+            } else {
+                Notification notification = Notification.builder()
+                        .type(NotificationType.PAYMENT_CONFIRMATION)
+                        .notificationDate(LocalDateTime.now())
+                        .order(order)
+                        .payment(payment)
+                        .build();
+
+                notificationRepository.save(notification);
+
+                if (order.getNotifications() == null) {
+                    order.setNotifications(new java.util.ArrayList<>());
+                }
+                order.getNotifications().add(notification);
+                log.info("Created new PAYMENT_CONFIRMATION notification for order: {}", order.getId());
+            }
+
+            if (payment.getNotifications() == null) {
+                payment.setNotifications(new java.util.ArrayList<>());
+            }
+            if (!payment.getNotifications().contains(existingNotification)) {
+                payment.getNotifications().add(existingNotification != null ? existingNotification : order.getNotifications().get(order.getNotifications().size() - 1));
+            }
+
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize payment confirmation: {}", e.getMessage());
         }
@@ -59,34 +100,64 @@ public class NotificationService {
 
     @Transactional
     public void cancelPaymentedNotification(Order order) {
-        Notification notification = Notification.builder()
-                .type(NotificationType.PAYMENT_CANCELLATION)
-                .notificationDate(LocalDateTime.now())
-                .order(order)
-                .build();
 
-        notificationRepository.save(notification);
+        Notification existingNotification = order.getNotifications() != null
+                ? order.getNotifications().stream()
+                .filter(n -> n.getType() == NotificationType.PAYMENT_CANCELLATION)
+                .findFirst()
+                .orElse(null)
+                : null;
 
-        if (order.getNotifications() == null) {
-            order.setNotifications(new java.util.ArrayList<>());
+        if (existingNotification != null) {
+            existingNotification.setNotificationDate(LocalDateTime.now());
+            notificationRepository.save(existingNotification);
+            log.info("Updated existing PAYMENT_CANCELLATION notification for order: {}", order.getId());
+        } else {
+            Notification notification = Notification.builder()
+                    .type(NotificationType.PAYMENT_CANCELLATION)
+                    .notificationDate(LocalDateTime.now())
+                    .order(order)
+                    .build();
+
+            notificationRepository.save(notification);
+
+            if (order.getNotifications() == null) {
+                order.setNotifications(new java.util.ArrayList<>());
+            }
+            order.getNotifications().add(notification);
+            log.info("Created new PAYMENT_CANCELLATION notification for order: {}", order.getId());
         }
-        order.getNotifications().add(notification);
+
     }
 
     @Transactional
     public void createDeliveredNotification(Order order) {
-        Notification notification = Notification.builder()
-                .type(NotificationType.DELIVERY_CONFIRMATION)
-                .notificationDate(LocalDateTime.now())
-                .order(order)
-                .build();
+        Notification existingNotification = order.getNotifications() != null
+                ? order.getNotifications().stream()
+                .filter(n -> n.getType() == NotificationType.DELIVERY_CONFIRMATION)
+                .findFirst()
+                .orElse(null)
+                : null;
 
-        notificationRepository.save(notification);
+        if (existingNotification != null) {
+            existingNotification.setNotificationDate(LocalDateTime.now());
+            notificationRepository.save(existingNotification);
+            log.info("Updated existing DELIVERY_CONFIRMATION notification for order: {}", order.getId());
+        } else {
+            Notification notification = Notification.builder()
+                    .type(NotificationType.DELIVERY_CONFIRMATION)
+                    .notificationDate(LocalDateTime.now())
+                    .order(order)
+                    .build();
 
-        if (order.getNotifications() == null) {
-            order.setNotifications(new java.util.ArrayList<>());
+            notificationRepository.save(notification);
+
+            if (order.getNotifications() == null) {
+                order.setNotifications(new java.util.ArrayList<>());
+            }
+            order.getNotifications().add(notification);
+            log.info("Created new DELIVERY_CONFIRMATION notification for order: {}", order.getId());
         }
-        order.getNotifications().add(notification);
     }
 }
 
