@@ -19,6 +19,7 @@ import vdtry06.springboot.ecommerce.entity.Topping;
 import vdtry06.springboot.ecommerce.repository.ToppingRepository;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -36,11 +37,11 @@ public class ProductService {
 
     @PreAuthorize("hasRole('ADMIN')")
     public ProductResponse addProduct(ProductRequest request) {
-        if(productRepository.existsByName(request.getName())) {
+        if (productRepository.existsByName(request.getName())) {
             throw new AppException(ErrorCode.PRODUCT_NAME_EXISTS);
         }
 
-        if(request.getAvailableQuantity() < 0) {
+        if (request.getAvailableQuantity() < 0) {
             throw new AppException(ErrorCode.NEGATIVE_QUANTITY);
         }
         BigDecimal price = request.getPrice();
@@ -56,18 +57,24 @@ public class ProductService {
         Product product = productMapper.toProduct(request);
         product.setCategories(categories);
 
-        String imageUrl = null;
-        if (request.getFile() != null && !request.getFile().isEmpty()) {
-            imageUrl = cloudinaryService.uploadFile(request.getFile(), "E-commerce/products/" + request.getName());
+        List<String> imageUrls = new ArrayList<>();
+        if (request.getFiles() != null && request.getFiles().length > 0) {
+            for (int i = 0; i < request.getFiles().length; i++) {
+                if (!request.getFiles()[i].isEmpty()) {
+                    String imageUrl = cloudinaryService.uploadFile(
+                            request.getFiles()[i],
+                            "E-commerce/products/" + request.getName() + "/image_" + i
+                    );
+                    imageUrls.add(imageUrl);
+                }
+            }
         }
-
-        product.setImageUrl(imageUrl);
+        product.setImageUrls(imageUrls);
 
         Set<Topping> toppings = request.getToppingNames().stream()
                 .map(toppingName -> toppingRepository.findByName(toppingName)
                         .orElseThrow(() -> new AppException(ErrorCode.TOPPING_NOT_EXISTED)))
                 .collect(Collectors.toSet());
-
         product.setToppings(toppings);
 
         productRepository.save(product);
@@ -76,7 +83,6 @@ public class ProductService {
 
     @PreAuthorize("hasRole('ADMIN')")
     public ProductResponse updateProduct(Long id, ProductRequest request) {
-
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
@@ -93,12 +99,12 @@ public class ProductService {
             log.info("Update product description: {}", product.getDescription());
         }
 
-        if(request.getAvailableQuantity() != null) {
+        if (request.getAvailableQuantity() != null) {
             product.setAvailableQuantity((int) Math.max(request.getAvailableQuantity(), 0));
             log.info("Update product available quantity: {}", product.getAvailableQuantity());
         }
 
-        if(request.getPrice() != null) {
+        if (request.getPrice() != null) {
             BigDecimal price = request.getPrice();
             if (price.compareTo(BigDecimal.ZERO) < 0) {
                 throw new AppException(ErrorCode.NEGATIVE_PRICE);
@@ -116,17 +122,30 @@ public class ProductService {
             log.info("Update product categories: {}", product.getCategories());
         }
 
-        if (request.getFile() != null && !request.getFile().isEmpty()) {
-            if (product.getImageUrl() != null) {
-                log.info("Updating product image for product {}", product.getImageUrl());
-                cloudinaryService.deleteFile(product.getImageUrl());
+        if (request.getFiles() != null && request.getFiles().length > 0) {
+            // Delete existing images
+            if (!product.getImageUrls().isEmpty()) {
+                for (String imageUrl : product.getImageUrls()) {
+                    cloudinaryService.deleteFile(imageUrl);
+                }
+                product.getImageUrls().clear();
             }
-            String imageUrl = cloudinaryService.uploadFile(request.getFile(), "E-commerce/products/" + product.getName());
-            product.setImageUrl(imageUrl);
-            log.info("Updated product image: {}", imageUrl);
+            // Upload new images
+            List<String> newImageUrls = new ArrayList<>();
+            for (int i = 0; i < request.getFiles().length; i++) {
+                if (!request.getFiles()[i].isEmpty()) {
+                    String imageUrl = cloudinaryService.uploadFile(
+                            request.getFiles()[i],
+                            "E-commerce/products/" + product.getName() + "/image_" + i
+                    );
+                    newImageUrls.add(imageUrl);
+                }
+            }
+            product.setImageUrls(newImageUrls);
+            log.info("Updated product images: {}", newImageUrls);
         }
 
-        if(request.getToppingNames() != null) {
+        if (request.getToppingNames() != null) {
             Set<Topping> toppings = request.getToppingNames().stream()
                     .map(toppingName -> toppingRepository.findByName(toppingName)
                             .orElseThrow(() -> new AppException(ErrorCode.TOPPING_NOT_EXISTED)))
@@ -136,7 +155,6 @@ public class ProductService {
         }
 
         productRepository.save(product);
-
         return productMapper.toProductResponse(product);
     }
 
@@ -156,8 +174,10 @@ public class ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        if (product.getImageUrl() != null) {
-            cloudinaryService.deleteFile(product.getImageUrl());
+        if (!product.getImageUrls().isEmpty()) {
+            for (String imageUrl : product.getImageUrls()) {
+                cloudinaryService.deleteFile(imageUrl);
+            }
         }
         productRepository.deleteById(id);
     }

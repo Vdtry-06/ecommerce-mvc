@@ -18,6 +18,6 @@ public class ProductRequest {
     Double availableQuantity;
     BigDecimal price;
     Set<String> categoryNames;
-    MultipartFile file;
+    MultipartFile[] files;
     Set<String> toppingNames;
 }

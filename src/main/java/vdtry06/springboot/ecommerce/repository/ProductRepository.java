@@ -13,6 +13,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByNameContaining(String name);
 
+    @Query("DELETE FROM Product p WHERE :imageUrl MEMBER OF p.imageUrls")
     void deleteByImageUrl(String imageUrl);
 
     @Query("SELECT p FROM Product p JOIN p.categories c WHERE c.id IN :categoryIds " +

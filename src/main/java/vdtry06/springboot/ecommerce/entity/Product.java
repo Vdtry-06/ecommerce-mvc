@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -27,7 +28,10 @@ public class Product {
     @Column(columnDefinition = "TEXT")
     String description;
 
-    String imageUrl;
+    @ElementCollection
+    @CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "image_url")
+    List<String> imageUrls = new ArrayList<>();
 
     @Column(nullable = false)
     Integer availableQuantity;
