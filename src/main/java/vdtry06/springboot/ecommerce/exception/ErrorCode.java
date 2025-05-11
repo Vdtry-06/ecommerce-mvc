@@ -58,6 +58,10 @@ public enum ErrorCode {
     REVIEW_NOT_EXISTED(1059, "Review does not exist", HttpStatus.BAD_REQUEST),
     REVIEW_ALREADY_EXISTS(1060, "Review already exists", HttpStatus.BAD_REQUEST),
     NO_ITEMS_SELECTED(1061, "No items selected", HttpStatus.BAD_REQUEST ),
+    USER_NOT_PURCHASED_PRODUCT(1062, "User is not purchase product", HttpStatus.BAD_REQUEST),
+    UNAUTHORIZED_REVIEW_UPDATE(1063, "Unauthorized review update", HttpStatus.UNAUTHORIZED),
+    UNAUTHORIZED_REVIEW_DELETE(1064, "Unauthorized review delete", HttpStatus.UNAUTHORIZED),
+
     ;
 
     private final int code;
