@@ -36,7 +36,7 @@ public class Payment {
     PaymentMethod paymentMethod;
 
     @ManyToOne
-    @JoinColumn(name = "order_id")
+    @JoinColumn(name = "order_id", nullable = false)
     Order order;
 
     @OneToMany(mappedBy = "payment", cascade = CascadeType.ALL)

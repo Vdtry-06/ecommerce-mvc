@@ -160,20 +160,31 @@ public class PaymentService {
         try {
             updateProductQuantity(order, false);
 
-            Payment payment = Payment.builder()
-                    .reference("VNPAY_" + order.getId())
-                    .amount(order.getTotalPrice())
-                    .paymentMethod(PaymentMethod.VNPAY)
-                    .order(order)
-                    .notifications(new ArrayList<>())
-                    .build();
+            Payment payment = order.getPayments() != null && !order.getPayments().isEmpty()
+                    ? order.getPayments().get(0)
+                    : null;
+            if (payment == null) {
+                payment = Payment.builder()
+                        .reference("VNPAY_" + order.getId())
+                        .amount(order.getTotalPrice())
+                        .paymentMethod(PaymentMethod.VNPAY)
+                        .order(order)
+                        .notifications(new ArrayList<>())
+                        .build();
 
-            paymentRepository.save(payment);
+                paymentRepository.save(payment);
 
-            if (order.getPayments() == null) {
-                order.setPayments(new ArrayList<>());
+                if (order.getPayments() == null) {
+                    order.setPayments(new ArrayList<>());
+                }
+                order.getPayments().add(payment);
+                log.info("Created new payment for order: {}", order.getId());
+            } else {
+                payment.setAmount(order.getTotalPrice());
+                payment.setPaymentMethod(PaymentMethod.VNPAY);
+                paymentRepository.save(payment);
+                log.info("Updated existing payment for order: {}", order.getId());
             }
-            order.getPayments().add(payment);
 
             order.setStatus(OrderStatus.PAID);
             orderRepository.save(order);
