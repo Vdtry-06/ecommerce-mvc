@@ -17,4 +17,5 @@ public class ReviewResponse {
     Long ratingScore;
     String comment;
     LocalDateTime reviewDate;
+    boolean visible;
 }

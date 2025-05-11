@@ -4,6 +4,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vdtry06.springboot.ecommerce.dto.ApiResponse;
 import vdtry06.springboot.ecommerce.service.ReviewService;
@@ -29,14 +30,30 @@ public class ReviewController {
     }
 
     @PutMapping("/update/{id}")
-    public ApiResponse<ReviewResponse> updateReview(@PathVariable Long id , @RequestBody ReviewRequest reviewRequest) {
+    public ApiResponse<ReviewResponse> updateReview(@PathVariable Long id, @RequestBody ReviewRequest reviewRequest) {
         ReviewResponse reviewResponse = reviewService.updateReview(id, reviewRequest);
         return ApiResponse.<ReviewResponse>builder()
                 .data(reviewResponse)
                 .build();
     }
 
-    @PostMapping("/delete/{id}")
+    @PutMapping("/admin/update/{id}")
+    public ApiResponse<ReviewResponse> adminUpdateReview(@PathVariable Long id, @RequestBody ReviewRequest reviewRequest) {
+        ReviewResponse reviewResponse = reviewService.adminUpdateReview(id, reviewRequest);
+        return ApiResponse.<ReviewResponse>builder()
+                .data(reviewResponse)
+                .build();
+    }
+
+    @PutMapping("/toggle-visibility/{id}")
+    public ApiResponse<ReviewResponse> toggleVisibility(@PathVariable Long id) {
+        ReviewResponse reviewResponse = reviewService.toggleVisibility(id);
+        return ApiResponse.<ReviewResponse>builder()
+                .data(reviewResponse)
+                .build();
+    }
+
+    @DeleteMapping("/delete/{id}")
     public ApiResponse<String> deleteReview(@PathVariable Long id) {
         reviewService.deleteReview(id);
         return ApiResponse.<String>builder()
@@ -55,6 +72,14 @@ public class ReviewController {
     @GetMapping("/get-all")
     public ApiResponse<List<ReviewResponse>> getAllReviews() {
         List<ReviewResponse> reviewResponses = reviewService.getAllReviews();
+        return ApiResponse.<List<ReviewResponse>>builder()
+                .data(reviewResponses)
+                .build();
+    }
+
+    @GetMapping("/product/{productId}")
+    public ApiResponse<List<ReviewResponse>> getReviewsByProductId(@PathVariable Long productId) {
+        List<ReviewResponse> reviewResponses = reviewService.getReviewsByProductId(productId);
         return ApiResponse.<List<ReviewResponse>>builder()
                 .data(reviewResponses)
                 .build();

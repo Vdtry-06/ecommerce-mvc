@@ -27,6 +27,8 @@ public class Review {
     String comment;
     LocalDateTime reviewDate;
 
+    boolean visible = true;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     User user;

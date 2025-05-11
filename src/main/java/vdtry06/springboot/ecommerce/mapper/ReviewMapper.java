@@ -18,6 +18,7 @@ public interface ReviewMapper {
                 .ratingScore(review.getRatingScore())
                 .comment(review.getComment())
                 .reviewDate(review.getReviewDate())
+                .visible(review.isVisible())
                 .build();
     }
 }
