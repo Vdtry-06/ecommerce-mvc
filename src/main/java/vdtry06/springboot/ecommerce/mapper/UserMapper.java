@@ -18,12 +18,14 @@ public interface UserMapper {
 
     User toUserSendEmail(SendEmailRequest request);
 
+    @Mapping(source = "role", target = "role")
     UserResponse toUserResponse(User user);
 
+    @Mapping(source = "role", target = "role")
     UserInfoResponse toUserInfoResponse(User user);
 
     RegisterUserResponse toRegisterUserResponse(User user);
 
-    @Mapping(target = "roles", ignore = true)
+    @Mapping(target = "role", ignore = true)
     void updateUser(@MappingTarget User user, UserUpdationRequest request);
 }

@@ -135,7 +135,7 @@ public class AuthenticationController {
 
                     Role userRole = roleRepository.findById(PredefinedRole.USER_ROLE)
                             .orElseThrow(() -> new RuntimeException("Default role not found"));
-                    newUser.setRoles(new HashSet<>(Collections.singletonList(userRole)));
+                    newUser.setRole(userRole);
 
                     return userRepository.save(newUser);
                 });
@@ -144,11 +144,8 @@ public class AuthenticationController {
             Role adminRole = roleRepository.findById(PredefinedRole.ADMIN_ROLE)
                     .orElseThrow(() -> new RuntimeException("Admin role not found"));
 
-            boolean hasAdminRole = user.getRoles().stream()
-                    .anyMatch(role -> role.getName().equals(PredefinedRole.ADMIN_ROLE));
-
-            if (!hasAdminRole) {
-                user.getRoles().add(adminRole);
+            if (!PredefinedRole.ADMIN_ROLE.equals(user.getRole().getName())) {
+                user.setRole(adminRole);
                 user = userRepository.save(user);
             }
         }
@@ -156,9 +153,7 @@ public class AuthenticationController {
         String token = authenticationService.generateToken(user);
         long expiryTime = SignedJWT.parse(token).getJWTClaimsSet().getExpirationTime().getTime() - System.currentTimeMillis();
 
-        String roleName = user.getRoles().stream()
-                .anyMatch(role -> role.getName().equals(PredefinedRole.ADMIN_ROLE))
-                ? "ADMIN" : "USER";
+        String roleName = user.getRole() != null && PredefinedRole.ADMIN_ROLE.equals(user.getRole().getName()) ? "ADMIN" : "USER";
 
         return ApiResponse.<AuthenticationResponse>builder()
                 .data(AuthenticationResponse.builder()

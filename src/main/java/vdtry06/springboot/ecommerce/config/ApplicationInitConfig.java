@@ -61,14 +61,11 @@ public class ApplicationInitConfig {
                         .description("Admin role")
                         .build());
 
-                var roles = new HashSet<Role>();
-                roles.add(adminRole);
-
                 User user = User.builder()
                         .username(ADMIN_USER_NAME)
                         .password(passwordEncoder.encode(ADMIN_PASSWORD))
                         .email(emailUsername)
-                        .roles(roles)
+                        .role(adminRole)
                         .build();
 
                 userRepository.save(user);

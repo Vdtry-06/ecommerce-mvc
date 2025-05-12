@@ -19,7 +19,7 @@ public class UserInfoResponse {
     String firstName;
     String lastName;
     LocalDate dateOfBirth;
-    Set<RoleResponse> roles;
+    RoleResponse role;
     String imageUrl;
     AddressResponse address;
     List<OrderResponse> orders;

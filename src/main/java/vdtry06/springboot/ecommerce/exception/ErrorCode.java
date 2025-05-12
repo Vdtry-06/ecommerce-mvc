@@ -61,6 +61,7 @@ public enum ErrorCode {
     USER_NOT_PURCHASED_PRODUCT(1062, "User is not purchase product", HttpStatus.BAD_REQUEST),
     UNAUTHORIZED_REVIEW_UPDATE(1063, "Unauthorized review update", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED_REVIEW_DELETE(1064, "Unauthorized review delete", HttpStatus.UNAUTHORIZED),
+    ROLE_NOT_FOUND(1065, "Role not found", HttpStatus.NOT_FOUND),
 
     ;
 

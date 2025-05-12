@@ -44,9 +44,9 @@ public class AuthenticationEmailService {
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationExpiration(LocalDateTime.now().plusMinutes(15));
 
-        HashSet<Role> roles = new HashSet<>();
-        roleRepository.findById(PredefinedRole.USER_ROLE).ifPresent(roles::add);
-        user.setRoles(roles);
+        Role role = roleRepository.findById(PredefinedRole.USER_ROLE)
+                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+        user.setRole(role);
 
         try {
             user = userRepository.save(user);

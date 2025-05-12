@@ -18,6 +18,6 @@ public class UserResponse {
     String firstName;
     String lastName;
     LocalDate dateOfBirth;
-    Set<RoleResponse> roles;
+    RoleResponse role;
     String imageUrl;
 }
