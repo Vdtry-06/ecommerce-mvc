@@ -13,6 +13,7 @@ import java.util.List;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PaymentConfirmation {
+    Long orderId;
     String orderReference;
     BigDecimal amount;
     PaymentMethod paymentMethod;
