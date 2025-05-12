@@ -13,8 +13,12 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import vdtry06.springboot.ecommerce.dto.response.PaymentConfirmation;
 import vdtry06.springboot.ecommerce.entity.Notification;
+import vdtry06.springboot.ecommerce.entity.Order;
 import vdtry06.springboot.ecommerce.entity.Payment;
+import vdtry06.springboot.ecommerce.exception.AppException;
+import vdtry06.springboot.ecommerce.exception.ErrorCode;
 import vdtry06.springboot.ecommerce.repository.NotificationRepository;
+import vdtry06.springboot.ecommerce.repository.OrderRepository;
 import vdtry06.springboot.ecommerce.repository.PaymentRepository;
 
 import java.time.LocalDateTime;
@@ -30,6 +34,7 @@ public class KafkaConsumerService {
     EmailService emailService;
     NotificationRepository notificationRepository;
     PaymentRepository paymentRepository;
+    OrderRepository orderRepository;
 
     @KafkaListener(topics = "verification-codes")
     public void listen(ConsumerRecord<String, String> record) {
@@ -39,8 +44,9 @@ public class KafkaConsumerService {
 
         try {
             emailService.sendVerificationEmail(email, verificationCode);
+            log.info("Verification email sent to {}", email);
         } catch (MessagingException e) {
-            e.printStackTrace();
+            log.error("Failed to send verification email to {}: {}", email, e.getMessage(), e);
         }
     }
 
@@ -59,7 +65,13 @@ public class KafkaConsumerService {
                 return;
             }
 
-            log.info("Processing payment: OrderReference={}, Amount={}, PaymentMethod={}, User={} {} ({})",
+            Order order = orderRepository.findById(paymentConfirmation.getOrderId())
+                    .orElseThrow(() -> {
+                        log.error("Order not found for ID: {}", paymentConfirmation.getOrderId());
+                        return new AppException(ErrorCode.ORDER_NOT_FOUND);
+                    });
+
+            log.info("Processing payment: OrderReference={}, Amount={}, PaymentMethod={}, Username={}, UserEmail={}",
                     paymentConfirmation.getOrderReference(),
                     paymentConfirmation.getAmount(),
                     paymentConfirmation.getPaymentMethod(),
@@ -69,19 +81,22 @@ public class KafkaConsumerService {
             Payment paymentEntity = Payment.builder()
                     .amount(paymentConfirmation.getAmount())
                     .paymentMethod(paymentConfirmation.getPaymentMethod())
+                    .order(order)
+                    .reference(paymentConfirmation.getOrderReference())
                     .createdDate(LocalDateTime.now())
                     .lastModifiedDate(LocalDateTime.now())
                     .build();
 
             paymentRepository.save(paymentEntity);
 
-            notificationRepository.save(
-                    Notification.builder()
-                            .type(PAYMENT_CONFIRMATION)
-                            .notificationDate(LocalDateTime.now())
-                            .payment(paymentEntity)
-                            .build()
-            );
+            Notification notification = Notification.builder()
+                    .type(PAYMENT_CONFIRMATION)
+                    .notificationDate(LocalDateTime.now())
+                    .payment(paymentEntity)
+                    .order(order)
+                    .build();
+
+            notificationRepository.save(notification);
 
             String customerName = paymentConfirmation.getUsername();
             List<PaymentConfirmation.OrderLineDetails> orderLineDetails = paymentConfirmation.getOrderLines();
