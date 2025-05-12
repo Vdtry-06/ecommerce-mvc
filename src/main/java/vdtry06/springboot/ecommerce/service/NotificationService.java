@@ -33,6 +33,7 @@ public class NotificationService {
     public void createPaymentNotification(User user, Payment payment, Order order) {
         try {
             PaymentConfirmation paymentConfirmation = PaymentConfirmation.builder()
+                    .orderId(order.getId())
                     .orderReference(payment.getReference())
                     .amount(payment.getAmount())
                     .paymentMethod(payment.getPaymentMethod())
