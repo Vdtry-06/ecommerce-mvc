@@ -166,7 +166,7 @@ public class AuthenticationService {
 
         long remainingTime = SignedJWT.parse(token).getJWTClaimsSet().getExpirationTime().getTime() - System.currentTimeMillis();
 
-        String nameRole = user.getRoles().stream().findFirst().map(Role::getName).orElse("USER");
+        String nameRole = user.getRole() != null ? user.getRole().getName() : "USER";
 
         return AuthenticationResponse.builder()
                 .token(token)
@@ -203,12 +203,12 @@ public class AuthenticationService {
 
     private String buildScope(User user) {
         StringJoiner stringJoiner = new StringJoiner(" ");
-        if (!CollectionUtils.isEmpty(user.getRoles())) {
-            user.getRoles().forEach(roles -> {
-                stringJoiner.add("ROLE_" + roles.getName());
-                if (!CollectionUtils.isEmpty(roles.getPermissions()))
-                    roles.getPermissions().forEach(permissions -> stringJoiner.add(permissions.getName()));
-            });
+        Role role = user.getRole();
+        if (role != null) {
+            stringJoiner.add("ROLE_" + role.getName());
+            if (!CollectionUtils.isEmpty(role.getPermissions())) {
+                role.getPermissions().forEach(permission -> stringJoiner.add(permission.getName()));
+            }
         }
         return stringJoiner.toString();
     }

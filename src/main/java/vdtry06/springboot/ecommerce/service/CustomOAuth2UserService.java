@@ -70,12 +70,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             user.setProvider(OAuthProvider.GITHUB);
             user.setEnabled(true);
 
-            HashSet<Role> roles = new HashSet<>();
             Role userRole = roleRepository.findByName("USER");
-            if (userRole != null) {
-                roles.add(userRole);
+            if (userRole == null) {
+                throw new OAuth2AuthenticationException("USER role not found");
             }
-            user.setRoles(roles);
+            user.setRole(userRole);
         }
 
         try {
@@ -113,18 +112,19 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
             user.setProvider(OAuthProvider.GOOGLE);
             user.setEnabled(true);
-            user.setRoles(new HashSet<>());
-
             Role userRole = roleRepository.findByName("USER");
-            if (userRole != null) {
-                user.getRoles().add(userRole);
+            if (userRole == null) {
+                throw new OAuth2AuthenticationException("USER role not found");
             }
+            user.setRole(userRole);
         }
 
         if (email.equals("tunhoipro0306@gmail.com")) {
             Role adminRole = roleRepository.findByName("ADMIN");
             if (adminRole != null) {
-                user.getRoles().add(adminRole);
+                user.setRole(adminRole);
+            } else {
+                throw new OAuth2AuthenticationException("ADMIN role not found for privileged user");
             }
         }
 

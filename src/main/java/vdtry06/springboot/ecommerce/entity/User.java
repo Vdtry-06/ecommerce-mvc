@@ -62,12 +62,9 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user")
     List<Order> orders;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "user_role",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_name"))
-    Set<Role> roles;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_name", referencedColumnName = "name")
+    Role role;
 
     public User(String username, String email, String password) {
         this.username = username;
