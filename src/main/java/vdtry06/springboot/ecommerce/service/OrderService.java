@@ -51,36 +51,32 @@ public class OrderService {
         orderRepository.save(order);
         log.info("Saved order: {}", order.getId());
 
-        List<OrderLineResponse> orderLineResponses = request.getOrderLines().stream()
-                .map(orderLineRequest -> orderLineService.addOrderLine(order.getId(), orderLineRequest))
-                .toList();
+        request.getOrderLines().forEach(orderLineRequest ->
+                orderLineService.addOrderLine(order.getId(), orderLineRequest));
 
-        OrderResponse orderResponse = orderMapper.toOrderResponse(order);
-        orderResponse.setOrderLines(orderLineResponses);
+        return orderMapper.toOrderResponse(orderRepository.findById(order.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND)));
 
-        return orderResponse;
+//        List<OrderLineResponse> orderLineResponses = request.getOrderLines().stream()
+//                .map(orderLineRequest -> orderLineService.addOrderLine(order.getId(), orderLineRequest))
+//                .toList();
+//
+//        OrderResponse orderResponse = orderMapper.toOrderResponse(order);
+//        orderResponse.setOrderLines(orderLineResponses);
+//
+//        return orderResponse;
     }
 
     public OrderResponse getOrderById(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-        BigDecimal totalPrice = order.getOrderLines().stream()
-                .map(OrderLine::getPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        OrderResponse orderResponse = orderMapper.toOrderResponse(order);
-        orderResponse.setTotalPrice(totalPrice);
-
-        return orderResponse;
+        return orderMapper.toOrderResponse(order);
     }
 
     public List<OrderResponse> getAllOrdersOfUser(Long userId) {
         userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
-        List<Order> orders = orderRepository.findByUserId(userId);
-
-        return orders.stream()
+        return orderRepository.findByUserId(userId).stream()
                 .map(orderMapper::toOrderResponse)
                 .toList();
     }
@@ -93,14 +89,13 @@ public class OrderService {
     }
 
     @Transactional
-    public List<OrderResponse> deleteOrder(Long orderId) {
-        OrderResponse orderResponse = getOrderById(orderId);
-        if (orderResponse.getStatus() == OrderStatus.PENDING) {
-            orderRepository.deleteById(orderId);
-            return getAllOrders();
-        } else {
+    public void deleteOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+        if (order.getStatus() != OrderStatus.PENDING) {
             throw new AppException(ErrorCode.ORDER_STATE_PENDING);
         }
+        orderRepository.deleteById(orderId);
     }
 }
 

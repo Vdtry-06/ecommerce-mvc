@@ -26,6 +26,8 @@ public interface OrderMapper {
                 .orderLines(order.getOrderLines().stream()
                         .map(orderLineMapper::toOrderLineResponse)
                         .collect(Collectors.toList()))
+                .createdDate(order.getCreatedDate())
+                .lastModifiedDate(order.getLastModifiedDate())
                 .build();
     }
 
