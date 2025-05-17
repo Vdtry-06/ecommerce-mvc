@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vdtry06.springboot.ecommerce.entity.OrderLine;
+import vdtry06.springboot.ecommerce.entity.Topping;
 import vdtry06.springboot.ecommerce.mapper.OrderLineMapper;
 import vdtry06.springboot.ecommerce.dto.request.OrderLineRequest;
 import vdtry06.springboot.ecommerce.dto.response.OrderLineResponse;
@@ -17,10 +18,12 @@ import vdtry06.springboot.ecommerce.exception.ErrorCode;
 import vdtry06.springboot.ecommerce.repository.OrderLineRepository;
 import vdtry06.springboot.ecommerce.repository.OrderRepository;
 import vdtry06.springboot.ecommerce.repository.ProductRepository;
+import vdtry06.springboot.ecommerce.repository.ToppingRepository;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -32,94 +35,193 @@ public class OrderLineService {
     OrderRepository orderRepository;
     ProductRepository productRepository;
     OrderLineMapper orderLineMapper;
+    ToppingRepository toppingRepository;
 
     @Transactional
     public OrderLineResponse addOrderLine(Long orderId, OrderLineRequest request) {
-
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-        Product product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
-
-        if(product.getAvailableQuantity() < request.getQuantity()) {
-            throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
-        }
-
-        Optional<OrderLine> existingOrderLine = orderLineRepository.findByOrderIdAndProductId(orderId, request.getProductId());
-
-        OrderLine orderLine;
-        if(existingOrderLine.isPresent()) {
-            orderLine = existingOrderLine.get();
-            orderLine.setQuantity(orderLine.getQuantity() + request.getQuantity());
-            orderLine.setPrice(orderLine.getPrice().add(product.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()))));
-        } else {
-            BigDecimal price = product.getPrice().multiply(BigDecimal.valueOf(request.getQuantity()));
-            orderLine = OrderLine.builder()
-                    .order(order)
-                    .product(product)
-                    .quantity(request.getQuantity())
-                    .price(price)
-                    .build();
-            order.getOrderLines().add(orderLine);
-        }
-
+        Order order = validateOrder(orderId);
+        Product product = validateProduct(request.getProductId(), request.getQuantity());
+        Set<Topping> toppings = validateToppings(request.getToppingIds(), product);
+        OrderLine orderLine = orderLineRepository.findByOrderIdAndProductId(orderId, request.getProductId())
+                .map(existing -> updateExistingOrderLine(
+                        existing,
+                        request,
+                        product,
+                        toppings
+                ))
+                .orElseGet(() -> createNewOrderLine(
+                        order,
+                        product,
+                        request,
+                        toppings
+                ));
         orderLineRepository.save(orderLine);
-        log.info("Add order line: {}", orderLine.getProduct().getId());
+        updateOrderTotalPrice(order);
 
-        order.setTotalPrice(order.getOrderLines().stream()
-                .map(OrderLine::getPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add));
-
-        orderRepository.save(order);
-
+        log.info("Added/Updated order line for product: {}", product.getId());
         return orderLineMapper.toOrderLineResponse(orderLine);
     }
 
     @Transactional
     public OrderLineResponse updateOrderLine(Long orderId, Long orderLineId, OrderLineRequest request) {
-        OrderLine orderLine = orderLineRepository.findById(orderLineId)
-                .orElseThrow(() -> new AppException(ErrorCode.ORDER_LINE_NOT_FOUND));
+        OrderLine orderLine = validateOrderLine(orderId, orderLineId);
+        Product product = orderLine.getProduct();
+        Integer quantity = orderLine.getQuantity();
+        Set<Topping> toppings = orderLine.getSelectedToppings();
 
-        if(!orderLine.getOrder().getId().equals(orderId)) {
-            throw new AppException(ErrorCode.ORDER_NOT_FOUND);
+        if (quantity == null) {
+            log.error("Order line {} has null quantity", orderLineId);
+            throw new AppException(ErrorCode.INVALID_QUANTITY);
         }
 
-        if(orderLine.getProduct().getAvailableQuantity() < request.getQuantity()) {
-            throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
+        if (request.getProductId() != null) {
+            product = validateProduct(request.getProductId(), request.getQuantity() != null ? request.getQuantity() : quantity);
+            orderLine.setProduct(product);
+            log.debug("Updated product to ID: {}", product.getId());
         }
 
-        orderLine.setQuantity(request.getQuantity());
-        orderLine.setPrice(orderLine.getProduct().getPrice().multiply(BigDecimal.valueOf(request.getQuantity())));
+        if (request.getQuantity() != null) {
+            if (request.getQuantity() <= 0) {
+                log.error("Invalid quantity provided: {}", request.getQuantity());
+                throw new AppException(ErrorCode.INVALID_QUANTITY);
+            }
+            if (product.getAvailableQuantity() < request.getQuantity()) {
+                log.error("Insufficient stock for product ID: {}, requested: {}, available: {}",
+                        product.getId(), request.getQuantity(), product.getAvailableQuantity());
+                throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
+            }
+            quantity = request.getQuantity();
+            orderLine.setQuantity(quantity);
+            log.debug("Updated quantity to: {}", quantity);
+        }
 
-        orderLineRepository.save(orderLine);
+        if (request.getToppingIds() != null) {
+            try {
+                if (request.getToppingIds().isEmpty()) {
+                    orderLine.getSelectedToppings().clear(); // Clear existing toppings
+                    toppings = Set.of();
+                    log.info("Cleared all toppings for order line: {}", orderLineId);
+                } else {
+                    toppings = validateToppings(request.getToppingIds(), product);
+                    orderLine.setSelectedToppings(toppings);
+                    log.info("Updated toppings for order line: {} to: {}", orderLineId, toppings);
+                }
+            } catch (Exception e) {
+                log.error("Failed to update toppings for order line: {}", orderLineId, e);
+                throw new AppException(ErrorCode.TOPPING_UPDATE_FAILED);
+            }
+        }
+        try {
+            orderLine.setPrice(calculatePrice(product, quantity, toppings));
+            log.debug("Recalculated price: {}", orderLine.getPrice());
+        } catch (Exception e) {
+            log.error("Failed to calculate price for order line: {}", orderLineId, e);
+            throw new AppException(ErrorCode.PRICE_CALCULATION_FAILED);
+        }
 
+        try {
+            orderLineRepository.save(orderLine);
+            log.debug("Saved order line: {}", orderLineId);
+        } catch (Exception e) {
+            log.error("Failed to save order line: {}", orderLineId, e);
+            throw new AppException(ErrorCode.ORDER_LINE_SAVE_FAILED);
+        }
+
+        updateOrderTotalPrice(orderLine.getOrder());
+
+        log.info("Successfully updated order line: {}", orderLineId);
         return orderLineMapper.toOrderLineResponse(orderLine);
     }
 
     @Transactional
     public void removeOrderLine(Long orderId, Long orderLineId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+        Order order = validateOrder(orderId);
         OrderLine orderLine = orderLineRepository.findById(orderLineId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_LINE_NOT_FOUND));
-        order.setTotalPrice(order.getTotalPrice().subtract(orderLine.getPrice()));
         order.getOrderLines().remove(orderLine);
         orderLineRepository.delete(orderLine);
         if (order.getOrderLines().isEmpty()) {
             orderRepository.delete(order);
         } else {
-            orderRepository.save(order);
+            updateOrderTotalPrice(order);
         }
     }
 
     public List<OrderLineResponse> getOrderLines(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-
-        List<OrderLine> orderLines = orderLineRepository.findByOrder(order);
-
-        return orderLines.stream()
+        Order order = validateOrder(orderId);
+        return orderLineRepository.findByOrder(order).stream()
                 .map(orderLineMapper::toOrderLineResponse)
                 .collect(Collectors.toList());
+    }
+
+    private OrderLine validateOrderLine(Long orderId, Long orderLineId) {
+        return orderLineRepository.findById(orderLineId)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_LINE_NOT_FOUND));
+    }
+
+    private Order validateOrder(Long orderId) {
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+    }
+
+    private Product validateProduct(Long productId, Integer quantity) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+        if (product.getAvailableQuantity() < quantity) {
+            throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
+        }
+        return product;
+    }
+
+    private Set<Topping> validateToppings(Set<Long> toppingIds, Product product) {
+        if (toppingIds == null || toppingIds.isEmpty()) {
+            return Set.of();
+        }
+        Set<Topping> toppings = toppingRepository.findAllById(toppingIds).stream()
+                .filter(topping -> product.getToppings().contains(topping))
+                .collect(Collectors.toSet());
+        if (toppings.size() != toppingIds.size()) {
+            throw new AppException(ErrorCode.INVALID_TOPPING);
+        }
+        return toppings;
+    }
+
+    private OrderLine updateExistingOrderLine(OrderLine existing, OrderLineRequest request, Product product, Set<Topping> toppings) {
+        existing.setQuantity(existing.getQuantity() + request.getQuantity());
+        existing.setSelectedToppings(toppings);
+        existing.setPrice(calculatePrice(product, existing.getQuantity(), toppings));
+        return existing;
+    }
+
+    private OrderLine createNewOrderLine(Order order, Product product, OrderLineRequest request, Set<Topping> toppings) {
+        return OrderLine.builder()
+                .order(order)
+                .product(product)
+                .quantity(request.getQuantity())
+                .price(calculatePrice(product, request.getQuantity(), toppings))
+                .selectedToppings(toppings)
+                .build();
+    }
+
+    private BigDecimal calculatePrice(Product product, Integer quantity, Set<Topping> toppings) {
+        if (product.getPrice() == null || quantity == null) {
+            log.error("Invalid price calculation inputs: product price: {}, quantity: {}", product.getPrice(), quantity);
+            throw new AppException(ErrorCode.PRICE_CALCULATION_FAILED);
+        }
+        BigDecimal basePrice = product.getPrice().multiply(BigDecimal.valueOf(quantity));
+        BigDecimal toppingsPrice = toppings.stream()
+                .map(topping -> topping.getPrice() != null ? topping.getPrice() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .multiply(BigDecimal.valueOf(quantity));
+        return basePrice.add(toppingsPrice);
+    }
+
+    private void updateOrderTotalPrice(Order order) {
+        BigDecimal totalPrice = order.getOrderLines().stream()
+                .map(orderLine -> orderLine.getPrice() != null ? orderLine.getPrice() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        order.setTotalPrice(totalPrice);
+        orderRepository.save(order);
+        log.debug("Updated order total price: {}", totalPrice);
     }
 }

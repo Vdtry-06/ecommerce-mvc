@@ -4,6 +4,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -15,4 +16,5 @@ public class OrderLineResponse {
     Long productId;
     Integer quantity;
     BigDecimal price;
+    Set<ToppingResponse> selectedToppings;
 }
