@@ -62,6 +62,11 @@ public enum ErrorCode {
     UNAUTHORIZED_REVIEW_UPDATE(1063, "Unauthorized review update", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED_REVIEW_DELETE(1064, "Unauthorized review delete", HttpStatus.UNAUTHORIZED),
     ROLE_NOT_FOUND(1065, "Role not found", HttpStatus.NOT_FOUND),
+    INVALID_TOPPING(1065, "Invalid topping", HttpStatus.BAD_REQUEST),
+    INVALID_QUANTITY(1066, "Order line has null quantity", HttpStatus.BAD_REQUEST),
+    TOPPING_UPDATE_FAILED(1067, "Topping update failed by user", HttpStatus.BAD_REQUEST),
+    PRICE_CALCULATION_FAILED(1068, "Price calculation failed", HttpStatus.BAD_REQUEST),
+    ORDER_LINE_SAVE_FAILED(1069, "Order line save failed", HttpStatus.BAD_REQUEST),
 
     ;
 

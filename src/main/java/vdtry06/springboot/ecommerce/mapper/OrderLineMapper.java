@@ -12,21 +12,9 @@ import java.util.List;
 public interface OrderLineMapper {
     OrderLine toOrderLine(OrderLineRequest request);
 
-    @Mapping(target = "productId", source = "product")
-    default OrderLineResponse toOrderLineResponse(OrderLine orderLine) {
-        if (orderLine == null) {
-            return null;
-        }
-
-        return OrderLineResponse.builder()
-                .id(orderLine.getId())
-                .productId(orderLine.getProduct() != null ? orderLine.getProduct().getId() : null) // Ensure the productId is fetched
-                .quantity(orderLine.getQuantity())
-                .price(orderLine.getPrice())
-                .build();
-    }
+    @Mapping(target = "productId", expression = "java(orderLine.getProduct() != null ? orderLine.getProduct().getId() : null)")
+    @Mapping(target = "selectedToppings", expression = "java(orderLine.getSelectedToppings().stream().map(topping -> new vdtry06.springboot.ecommerce.dto.response.ToppingResponse(topping.getId(), topping.getName(), topping.getPrice())).collect(java.util.stream.Collectors.toSet()))")
+    OrderLineResponse toOrderLineResponse(OrderLine orderLine);
 
     List<OrderLine> toOrderLines(List<OrderLineResponse> orderLineResponses);
-
-    OrderLine toOrderLine(OrderLineResponse orderLineResponse);
 }

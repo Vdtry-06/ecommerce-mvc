@@ -5,6 +5,8 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -29,4 +31,12 @@ public class OrderLine {
 
     Integer quantity;
     BigDecimal price;
+
+    @ManyToMany
+    @JoinTable(
+            name = "order_line_topping",
+            joinColumns = @JoinColumn(name = "order_line_id"),
+            inverseJoinColumns = @JoinColumn(name = "topping_id")
+    )
+    Set<Topping> selectedToppings = new HashSet<>();
 }
