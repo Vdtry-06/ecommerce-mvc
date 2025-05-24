@@ -10,6 +10,8 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.log4j.Log4j2;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Service;
 import vdtry06.springboot.ecommerce.dto.response.PaymentConfirmation;
 import vdtry06.springboot.ecommerce.entity.Notification;
@@ -23,6 +25,7 @@ import vdtry06.springboot.ecommerce.repository.PaymentRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static vdtry06.springboot.ecommerce.constant.NotificationType.PAYMENT_CONFIRMATION;
 
@@ -35,9 +38,10 @@ public class KafkaConsumerService {
     NotificationRepository notificationRepository;
     PaymentRepository paymentRepository;
     OrderRepository orderRepository;
+    KafkaTemplate<String, String> kafkaTemplate;
 
     @KafkaListener(topics = "verification-codes")
-    public void listen(ConsumerRecord<String, String> record) {
+    public void listen(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
         String[] data = record.value().split(",");
         String email = data[0];
         String verificationCode = data[1];
@@ -45,13 +49,15 @@ public class KafkaConsumerService {
         try {
             emailService.sendVerificationEmail(email, verificationCode);
             log.info("Verification email sent to {}", email);
+            acknowledgment.acknowledge();
         } catch (MessagingException e) {
             log.error("Failed to send verification email to {}: {}", email, e.getMessage(), e);
+            // Optionally send to DLQ
         }
     }
 
     @KafkaListener(topics = "payment-topic")
-    public void consumePaymentMessage(ConsumerRecord<String, String> record) {
+    public void consumePaymentMessage(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
         String message = record.value();
 
         ObjectMapper objectMapper = new ObjectMapper();
@@ -62,6 +68,16 @@ public class KafkaConsumerService {
 
             if (paymentConfirmation.getAmount() == null) {
                 log.error("ERROR - Received null amount in message: {}", message);
+                kafkaTemplate.send("payment-dlq-topic", record.key(), message);
+                acknowledgment.acknowledge();
+                return;
+            }
+
+            Optional<Notification> existingNotification = notificationRepository.findByOrderIdAndType(
+                    paymentConfirmation.getOrderId(), PAYMENT_CONFIRMATION);
+            if (existingNotification.isPresent()) {
+                log.info("Notification already processed for order: {}", paymentConfirmation.getOrderId());
+                acknowledgment.acknowledge();
                 return;
             }
 
@@ -87,7 +103,13 @@ public class KafkaConsumerService {
                     .lastModifiedDate(LocalDateTime.now())
                     .build();
 
-            paymentRepository.save(paymentEntity);
+            try {
+                paymentRepository.save(paymentEntity);
+            } catch (Exception e) {
+                log.error("Failed to save payment for order: {}: {}", paymentConfirmation.getOrderId(), e.getMessage());
+                kafkaTemplate.send("payment-dlq-topic", record.key(), message);
+                return;
+            }
 
             Notification notification = Notification.builder()
                     .type(PAYMENT_CONFIRMATION)
@@ -96,13 +118,20 @@ public class KafkaConsumerService {
                     .order(order)
                     .build();
 
-            notificationRepository.save(notification);
+            try {
+                notificationRepository.save(notification);
+            } catch (Exception e) {
+                log.error("Failed to save notification for order: {}: {}", paymentConfirmation.getOrderId(), e.getMessage());
+                kafkaTemplate.send("payment-dlq-topic", record.key(), message);
+                return;
+            }
 
             String customerName = paymentConfirmation.getUsername();
             List<PaymentConfirmation.OrderLineDetails> orderLineDetails = paymentConfirmation.getOrderLines();
             if (orderLineDetails == null || orderLineDetails.isEmpty()) {
                 log.warn("No order line details found for payment confirmation: {}", paymentConfirmation.getOrderReference());
             }
+
             try {
                 emailService.sendPaymentSuccessEmail(
                         paymentConfirmation.getUserEmail(),
@@ -112,14 +141,18 @@ public class KafkaConsumerService {
                         orderLineDetails
                 );
                 log.info("Payment success email sent to {}", paymentConfirmation.getUserEmail());
+                acknowledgment.acknowledge();
             } catch (MessagingException e) {
                 log.error("Failed to send email to {}: {}", paymentConfirmation.getUserEmail(), e.getMessage());
+                kafkaTemplate.send("payment-dlq-topic", record.key(), message);
             }
 
         } catch (JsonProcessingException e) {
             log.error("ERROR - Invalid JSON format: {}", message, e);
+            kafkaTemplate.send("payment-dlq-topic", record.key(), message);
         } catch (Exception e) {
             log.error("ERROR - Unexpected error: {}", e.getMessage(), e);
+            kafkaTemplate.send("payment-dlq-topic", record.key(), message);
         }
     }
 }
