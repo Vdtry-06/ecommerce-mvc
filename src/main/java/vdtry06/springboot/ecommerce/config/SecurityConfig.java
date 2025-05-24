@@ -39,6 +39,7 @@ public class SecurityConfig {
     private static final String [] PUBLIC_GET_ENDPOINTS = {
             "/product/get-all",
             "/product/get/**",
+            "/product/get-name-products/**",
             "/product/categories/filter",
             "/category/get-categories",
             "/category/get-category/**",
