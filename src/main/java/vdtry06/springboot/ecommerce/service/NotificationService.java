@@ -55,44 +55,8 @@ public class NotificationService {
                     .build();
 
             String message = objectMapper.writeValueAsString(paymentConfirmation);
-            kafkaTemplate.send("payment-topic", message);
+            kafkaTemplate.send("payment-topic", order.getId().toString(), message);
             log.info("Sent payment confirmation to Kafka for order: {}", payment.getReference());
-
-            Notification existingNotification = order.getNotifications() != null
-                    ? order.getNotifications().stream()
-                    .filter(n -> n.getType() == NotificationType.PAYMENT_CONFIRMATION)
-                    .findFirst()
-                    .orElse(null)
-                    : null;
-
-            if (existingNotification != null) {
-                existingNotification.setNotificationDate(LocalDateTime.now());
-                existingNotification.setPayment(payment);
-                notificationRepository.save(existingNotification);
-                log.info("Updated existing PAYMENT_CONFIRMATION notification for order: {}", order.getId());
-            } else {
-                Notification notification = Notification.builder()
-                        .type(NotificationType.PAYMENT_CONFIRMATION)
-                        .notificationDate(LocalDateTime.now())
-                        .order(order)
-                        .payment(payment)
-                        .build();
-
-                notificationRepository.save(notification);
-
-                if (order.getNotifications() == null) {
-                    order.setNotifications(new java.util.ArrayList<>());
-                }
-                order.getNotifications().add(notification);
-                log.info("Created new PAYMENT_CONFIRMATION notification for order: {}", order.getId());
-            }
-
-            if (payment.getNotifications() == null) {
-                payment.setNotifications(new java.util.ArrayList<>());
-            }
-            if (!payment.getNotifications().contains(existingNotification)) {
-                payment.getNotifications().add(existingNotification != null ? existingNotification : order.getNotifications().get(order.getNotifications().size() - 1));
-            }
 
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize payment confirmation: {}", e.getMessage());
@@ -101,7 +65,6 @@ public class NotificationService {
 
     @Transactional
     public void cancelPaymentedNotification(Order order) {
-
         Notification existingNotification = order.getNotifications() != null
                 ? order.getNotifications().stream()
                 .filter(n -> n.getType() == NotificationType.PAYMENT_CANCELLATION)
@@ -128,7 +91,6 @@ public class NotificationService {
             order.getNotifications().add(notification);
             log.info("Created new PAYMENT_CANCELLATION notification for order: {}", order.getId());
         }
-
     }
 
     @Transactional
@@ -161,4 +123,3 @@ public class NotificationService {
         }
     }
 }
-
