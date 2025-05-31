@@ -17,6 +17,7 @@ import vdtry06.springboot.ecommerce.dto.response.OrderResponse;
 import vdtry06.springboot.ecommerce.exception.AppException;
 import vdtry06.springboot.ecommerce.exception.ErrorCode;
 import vdtry06.springboot.ecommerce.entity.User;
+import vdtry06.springboot.ecommerce.repository.CartItemRepository;
 import vdtry06.springboot.ecommerce.repository.OrderRepository;
 import vdtry06.springboot.ecommerce.repository.UserRepository;
 
@@ -33,6 +34,40 @@ public class OrderService {
     UserRepository userRepository;
     OrderMapper orderMapper;
     OrderLineService orderLineService;
+    RedisCartService redisCartService;
+    CartItemRepository cartItemRepository;
+
+    @Transactional
+    public OrderResponse confirmOrder(Long userId) {
+        OrderRequest request = redisCartService.getCartAsOrderRequest(userId);
+        if (request.getOrderLines().isEmpty()) {
+            throw new AppException(ErrorCode.CART_EMPTY);
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        Order order = Order.builder()
+                .user(user)
+                .status(OrderStatus.PENDING)
+                .totalPrice(BigDecimal.ZERO)
+                .orderLines(new ArrayList<>())
+                .payments(new ArrayList<>())
+                .notifications(new ArrayList<>())
+                .build();
+
+        orderRepository.save(order);
+        log.info("Saved order: {}", order.getId());
+
+        request.getOrderLines().forEach(orderLineRequest ->
+                orderLineService.addOrderLine(order.getId(), orderLineRequest));
+
+        redisCartService.clearCart(userId); // Xóa giỏ hàng
+        cartItemRepository.deleteByUserId(userId);
+
+        return orderMapper.toOrderResponse(orderRepository.findById(order.getId())
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND)));
+    }
 
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
