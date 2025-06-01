@@ -1,5 +1,6 @@
 package vdtry06.springboot.ecommerce.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -7,16 +8,19 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vdtry06.springboot.ecommerce.dto.request.OrderLineRequest;
 import vdtry06.springboot.ecommerce.dto.request.OrderRequest;
 import vdtry06.springboot.ecommerce.dto.response.OrderLineResponse;
 import vdtry06.springboot.ecommerce.dto.response.ToppingResponse;
 import vdtry06.springboot.ecommerce.entity.CartItem;
+import vdtry06.springboot.ecommerce.entity.Order;
 import vdtry06.springboot.ecommerce.entity.Product;
 import vdtry06.springboot.ecommerce.entity.Topping;
 import vdtry06.springboot.ecommerce.exception.AppException;
 import vdtry06.springboot.ecommerce.exception.ErrorCode;
 import vdtry06.springboot.ecommerce.repository.CartItemRepository;
+import vdtry06.springboot.ecommerce.repository.OrderRepository;
 import vdtry06.springboot.ecommerce.repository.ProductRepository;
 import vdtry06.springboot.ecommerce.repository.ToppingRepository;
 
@@ -36,20 +40,23 @@ public class RedisCartService {
     CartItemRepository cartItemRepository;
     ObjectMapper objectMapper;
     KafkaProducerService kafkaProducerService;
+    CartUtilityService cartUtilityService;
+    OrderRepository orderRepository;
 
     private static final String CART_KEY_PREFIX = "cart:user:";
-    private static final long CART_TTL_DAYS = 7;
+    private static final long CART_TTL_DAYS = 60;
 
     public List<OrderLineResponse> getCart(Long userId) {
         String key = CART_KEY_PREFIX + userId;
-        Object cartData = redisTemplate.opsForValue().get(key);
-        if (cartData == null) {
+        Map<Object, Object> cartData = redisTemplate.opsForHash().entries(key);
+        if (cartData.isEmpty()) {
             return restoreCartFromDatabase(userId);
         }
         try {
-            List<OrderLineRequest> cart = objectMapper.convertValue(cartData, objectMapper.getTypeFactory()
-                    .constructCollectionType(List.class, OrderLineRequest.class));
-            return cart.stream().map(this::toOrderLineResponse).toList();
+            return cartData.values().stream()
+                    .map(data -> objectMapper.convertValue(data, OrderLineRequest.class))
+                    .map(this::toOrderLineResponse)
+                    .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("Error reading cart from Redis for key {}: {}", key, e.getMessage(), e);
             throw new AppException(ErrorCode.CART_READ_FAILED);
@@ -58,10 +65,9 @@ public class RedisCartService {
 
     public OrderLineResponse addOrUpdateCartLine(Long userId, OrderLineRequest request) {
         String key = CART_KEY_PREFIX + userId;
-        List<OrderLineRequest> cart = getCartAsList(userId);
-
+        ArrayList<OrderLineRequest> cart = getCartAsList(userId); // Returns empty ArrayList for new user
         Product product = validateProduct(request.getProductId(), request.getQuantity());
-        Set<Topping> toppings = validateToppings(request.getToppingIds(), product);
+        Set<Topping> toppings = cartUtilityService.validateToppings(request.getToppingIds(), product);
 
         Optional<OrderLineRequest> existing = cart.stream()
                 .filter(item -> item.getProductId().equals(request.getProductId()))
@@ -71,17 +77,17 @@ public class RedisCartService {
             existing.get().setQuantity(existing.get().getQuantity() + request.getQuantity());
             existing.get().setToppingIds(request.getToppingIds());
         } else {
-            cart.add(request);
+            cart.add(request); // Add the new request to the empty cart
         }
 
-        saveCart(key, cart);
+        saveCart(key, cart); // This will save the new item
         sendKafkaEvent(userId, request, "ADD");
         return toOrderLineResponse(request);
     }
 
     public OrderLineResponse updateCartLine(Long userId, Long productId, OrderLineRequest request) {
         String key = CART_KEY_PREFIX + userId;
-        List<OrderLineRequest> cart = getCartAsList(userId);
+        ArrayList<OrderLineRequest> cart = getCartAsList(userId);
 
         OrderLineRequest line = cart.stream()
                 .filter(item -> item.getProductId().equals(productId))
@@ -89,7 +95,7 @@ public class RedisCartService {
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
         Product product = validateProduct(productId, request.getQuantity());
-        Set<Topping> toppings = validateToppings(request.getToppingIds(), product);
+        Set<Topping> toppings = cartUtilityService.validateToppings(request.getToppingIds(), product);
 
         line.setQuantity(request.getQuantity());
         line.setToppingIds(request.getToppingIds());
@@ -101,19 +107,8 @@ public class RedisCartService {
 
     public void removeCartLine(Long userId, Long productId) {
         String key = CART_KEY_PREFIX + userId;
-        List<OrderLineRequest> cart = getCartAsList(userId);
-        Optional<OrderLineRequest> line = cart.stream()
-                .filter(item -> item.getProductId().equals(productId))
-                .findFirst();
-        cart.removeIf(item -> item.getProductId().equals(productId));
-        if (cart.isEmpty()) {
-            redisTemplate.delete(key);
-        } else {
-            saveCart(key, cart);
-        }
-        if (line.isPresent()) {
-            sendKafkaEvent(userId, line.get(), "REMOVE");
-        }
+        redisTemplate.opsForHash().delete(key, productId.toString());
+        sendKafkaEvent(userId, OrderLineRequest.builder().productId(productId).build(), "REMOVE");
     }
 
     public void clearCart(Long userId) {
@@ -124,53 +119,66 @@ public class RedisCartService {
         cartItemRepository.deleteByUserId(userId);
     }
 
-    public OrderRequest getCartAsOrderRequest(Long userId) {
-        List<OrderLineRequest> cart = getCartAsList(userId);
-        return OrderRequest.builder()
-                .userId(userId)
-                .orderLines(cart)
-                .build();
-    }
-
-    private List<OrderLineRequest> getCartAsList(Long userId) {
+    public ArrayList<OrderLineRequest> getCartAsList(Long userId) {
         String key = CART_KEY_PREFIX + userId;
-        Object cartData = redisTemplate.opsForValue().get(key);
-        if (cartData == null) {
+        Map<Object, Object> cartData;
+        try {
+            cartData = redisTemplate.opsForHash().entries(key);
+        } catch (Exception e) {
+            log.error("Failed to retrieve cart data from Redis for key {}: {}", key, e.getMessage(), e);
             return new ArrayList<>(restoreCartFromDatabase(userId).stream()
                     .map(this::toOrderLineRequest)
-                    .toList());
+                    .collect(Collectors.toCollection(ArrayList::new)));
+        }
+        if (cartData == null || cartData.isEmpty()) {
+            // For new users, return an empty list but allow the calling method to add data
+            return new ArrayList<>();
         }
         try {
-            log.debug("Cart data from Redis for key {}: {}", key, cartData);
-            List<OrderLineRequest> cart = objectMapper.convertValue(cartData, objectMapper.getTypeFactory()
-                    .constructCollectionType(List.class, OrderLineRequest.class));
-            return cart != null ? new ArrayList<>(cart) : new ArrayList<>();
+            return new ArrayList<>(cartData.values().stream()
+                    .filter(data -> data instanceof String)
+                    .map(data -> {
+                        try {
+                            return objectMapper.convertValue(data, OrderLineRequest.class);
+                        } catch (IllegalArgumentException e) {
+                            log.error("Failed to convert data {} to OrderLineRequest for key {}: {}", data, key, e.getMessage(), e);
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toCollection(ArrayList::new)));
         } catch (Exception e) {
             log.error("Error converting cart data from Redis for key {}: {}", key, e.getMessage(), e);
             throw new AppException(ErrorCode.CART_READ_FAILED);
         }
     }
 
-    private List<OrderLineResponse> restoreCartFromDatabase(Long userId) {
+    private ArrayList<OrderLineResponse> restoreCartFromDatabase(Long userId) {
         List<CartItem> cartItems = cartItemRepository.findByUserId(userId);
-        List<OrderLineRequest> cart = cartItems.stream()
+        if (cartItems == null || cartItems.isEmpty()) {
+            log.info("No cart items found in database for user: {}", userId);
+            return new ArrayList<>();
+        }
+        ArrayList<OrderLineRequest> cart = new ArrayList<>(cartItems.stream()
                 .map(item -> {
                     Set<Long> toppingIds = item.getToppingIds() != null
                             ? objectMapper.convertValue(item.getToppingIds(), objectMapper.getTypeFactory()
                             .constructCollectionType(Set.class, Long.class))
-                            : Set.of();
+                            : new HashSet<>();
                     return OrderLineRequest.builder()
                             .productId(item.getProductId())
                             .quantity(item.getQuantity())
                             .toppingIds(toppingIds)
                             .build();
                 })
-                .toList();
+                .collect(Collectors.toCollection(ArrayList::new)));
         if (!cart.isEmpty()) {
             String key = CART_KEY_PREFIX + userId;
             saveCart(key, cart);
         }
-        return new ArrayList<>(cart.stream().map(this::toOrderLineResponse).toList());
+        return new ArrayList<>(cart.stream()
+                .map(this::toOrderLineResponse)
+                .collect(Collectors.toCollection(ArrayList::new)));
     }
 
     private OrderLineRequest toOrderLineRequest(OrderLineResponse response) {
@@ -183,10 +191,26 @@ public class RedisCartService {
                 .build();
     }
 
-    private void saveCart(String key, List<OrderLineRequest> cart) {
+    public void saveCart(String key, ArrayList<OrderLineRequest> cart) {
         try {
-            redisTemplate.opsForValue().set(key, cart, CART_TTL_DAYS, TimeUnit.DAYS);
-            log.debug("Cart saved to Redis for key: {}", key);
+            if (cart == null || cart.isEmpty()) {
+                log.warn("Cart is empty for key {}. Skipping save to Redis.", key);
+                redisTemplate.delete(key); // Clear the key if cart is empty
+                return;
+            }
+            Map<String, String> cartMap = cart.stream()
+                    .collect(Collectors.toMap(
+                            item -> item.getProductId().toString(),
+                            item -> {
+                                try {
+                                    return objectMapper.writeValueAsString(item);
+                                } catch (JsonProcessingException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }));
+            redisTemplate.opsForHash().putAll(key, cartMap);
+            redisTemplate.expire(key, CART_TTL_DAYS, TimeUnit.SECONDS);
+            log.debug("Cart saved to Redis for key: {}. Entries: {}", key, cartMap);
         } catch (Exception e) {
             log.error("Error saving cart to Redis for key {}: {}", key, e.getMessage(), e);
             throw new AppException(ErrorCode.CART_WRITE_FAILED);
@@ -202,8 +226,7 @@ public class RedisCartService {
                     "toppingIds", request.getToppingIds() != null ? request.getToppingIds() : List.of(),
                     "action", action
             );
-            String message = objectMapper.writeValueAsString(event);
-            kafkaProducerService.sendMessage("cart-topic", message);
+            kafkaProducerService.sendMessage("cart-topic", objectMapper.writeValueAsString(event));
         } catch (Exception e) {
             log.error("Error sending Kafka event for user {}: {}", userId, e.getMessage(), e);
         }
@@ -212,8 +235,8 @@ public class RedisCartService {
     private OrderLineResponse toOrderLineResponse(OrderLineRequest request) {
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
-        Set<Topping> toppings = validateToppings(request.getToppingIds(), product);
-        BigDecimal price = calculatePrice(product, request.getQuantity(), toppings);
+        Set<Topping> toppings = cartUtilityService.validateToppings(request.getToppingIds(), product);
+        BigDecimal price = cartUtilityService.calculatePrice(product, request.getQuantity(), toppings);
         Set<ToppingResponse> toppingResponses = toppings.stream()
                 .map(topping -> ToppingResponse.builder()
                         .id(topping.getId())
@@ -229,6 +252,17 @@ public class RedisCartService {
                 .build();
     }
 
+    @Transactional
+    public void removeCartItemsByOrderId(Long userId, Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+        order.getOrderLines().forEach(line ->
+                this.removeCartLine(userId, line.getProduct().getId())); // Use 'this' instead of 'redisCartService'
+        order.getOrderLines().forEach(line ->
+                cartItemRepository.findByUserIdAndProductId(userId, line.getProduct().getId())
+                        .ifPresent(cartItemRepository::delete));
+    }
+
     private Product validateProduct(Long productId, Integer quantity) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
@@ -238,25 +272,4 @@ public class RedisCartService {
         return product;
     }
 
-    private Set<Topping> validateToppings(Set<Long> toppingIds, Product product) {
-        if (toppingIds == null || toppingIds.isEmpty()) {
-            return Set.of();
-        }
-        Set<Topping> toppings = toppingRepository.findAllById(toppingIds).stream()
-                .filter(topping -> product.getToppings().contains(topping))
-                .collect(Collectors.toSet());
-        if (toppings.size() != toppingIds.size()) {
-            throw new AppException(ErrorCode.INVALID_TOPPING);
-        }
-        return toppings;
-    }
-
-    private BigDecimal calculatePrice(Product product, Integer quantity, Set<Topping> toppings) {
-        BigDecimal basePrice = product.getPrice().multiply(BigDecimal.valueOf(quantity));
-        BigDecimal toppingsPrice = toppings.stream()
-                .map(topping -> topping.getPrice() != null ? topping.getPrice() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .multiply(BigDecimal.valueOf(quantity));
-        return basePrice.add(toppingsPrice);
-    }
 }
