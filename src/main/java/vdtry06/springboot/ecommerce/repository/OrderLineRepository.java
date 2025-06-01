@@ -13,4 +13,6 @@ public interface OrderLineRepository extends JpaRepository<OrderLine, Long> {
     List<OrderLine> findByOrder(Order order);
 
     Optional<OrderLine> findByOrderIdAndProductId(Long orderId, Long orderId1);
+
+    void deleteByOrder(Order order);
 }
