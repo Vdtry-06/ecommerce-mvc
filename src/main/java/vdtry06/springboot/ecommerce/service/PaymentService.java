@@ -1,5 +1,6 @@
 package vdtry06.springboot.ecommerce.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -11,36 +12,35 @@ import vdtry06.springboot.ecommerce.config.payment.VNPAYConfig;
 import vdtry06.springboot.ecommerce.constant.OrderStatus;
 import vdtry06.springboot.ecommerce.constant.PaymentMethod;
 import vdtry06.springboot.ecommerce.config.vnPay.VNPayUtil;
-import vdtry06.springboot.ecommerce.entity.Payment;
+import vdtry06.springboot.ecommerce.dto.request.OrderLineRequest;
+import vdtry06.springboot.ecommerce.entity.*;
 import vdtry06.springboot.ecommerce.dto.response.VNPayResponse;
-import vdtry06.springboot.ecommerce.entity.Order;
-import vdtry06.springboot.ecommerce.entity.OrderLine;
 import vdtry06.springboot.ecommerce.exception.AppException;
 import vdtry06.springboot.ecommerce.exception.ErrorCode;
 import vdtry06.springboot.ecommerce.repository.OrderRepository;
 import vdtry06.springboot.ecommerce.repository.OrderLineRepository;
 import vdtry06.springboot.ecommerce.repository.PaymentRepository;
 import vdtry06.springboot.ecommerce.repository.ProductRepository;
-import vdtry06.springboot.ecommerce.entity.Product;
-import vdtry06.springboot.ecommerce.entity.User;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class PaymentService {
-
     PaymentRepository paymentRepository;
     OrderRepository orderRepository;
     OrderLineRepository orderLineRepository;
     ProductRepository productRepository;
     NotificationService notificationService;
     VNPAYConfig vnpayConfig;
+    KafkaProducerService kafkaProducerService;
+    ObjectMapper objectMapper;
 
     @Transactional
     public VNPayResponse createVNPayPaymentForSelectedItems(HttpServletRequest request, List<OrderLine> selectedOrderLines, Long userId) {
@@ -64,6 +64,19 @@ public class PaymentService {
         } else {
             paymentOrder = createNewOrderForPayment(user, selectedOrderLines, totalPrice);
         }
+
+        selectedOrderLines.forEach(line -> {
+            Map<String, Object> event = Map.of(
+                    "userId", userId,
+                    "productId", line.getProduct().getId(),
+                    "action", "REMOVE"
+            );
+            try {
+                kafkaProducerService.sendMessage("cart-topic", objectMapper.writeValueAsString(event));
+            } catch (Exception e) {
+                log.error("Error sending Kafka event for product {}: {}", line.getProduct().getId(), e.getMessage(), e);
+            }
+        });
 
         long amount = totalPrice.multiply(BigDecimal.valueOf(100)).longValue();
         String bankCode = request.getParameter("bankCode");
@@ -93,61 +106,24 @@ public class PaymentService {
     }
 
     private Order createNewOrderForPayment(User user, List<OrderLine> selectedOrderLines, BigDecimal totalPrice) {
-        Order newOrder = Order.builder()
+        Order order = Order.builder()
                 .user(user)
                 .status(OrderStatus.PENDING)
                 .totalPrice(totalPrice)
-                .orderLines(new ArrayList<>())
+                .orderLines(new ArrayList<>(selectedOrderLines))
                 .payments(new ArrayList<>())
                 .notifications(new ArrayList<>())
                 .build();
-
-        orderRepository.save(newOrder);
-        log.info("Created new order for payment: {}", newOrder.getId());
-
-        for (OrderLine orderLine : selectedOrderLines) {
-            Product product = productRepository.findById(orderLine.getProduct().getId())
-                    .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
-
-            OrderLine newLine = OrderLine.builder()
-                    .order(newOrder)
-                    .product(product)
-                    .quantity(orderLine.getQuantity())
-                    .price(orderLine.getPrice())
-                    .build();
-
-            orderLineRepository.save(newLine);
-            newOrder.getOrderLines().add(newLine);
-        }
-
-        orderRepository.save(newOrder);
-        return newOrder;
+        return orderRepository.save(order);
     }
 
-    private void removeSelectedItemsFromOrder(Order order, List<OrderLine> selectedOrderLines) {
-        List<Long> selectedProductIds = selectedOrderLines.stream()
-                .map(orderLine -> orderLine.getProduct().getId())
-                .toList();
-
-        List<OrderLine> linesToRemove = order.getOrderLines().stream()
-                .filter(line -> selectedProductIds.contains(line.getProduct().getId()))
-                .toList();
-
-        for (OrderLine line : linesToRemove) {
-            order.getOrderLines().remove(line);
-            orderLineRepository.delete(line);
-        }
-
-        if (order.getOrderLines().isEmpty()) {
-            orderRepository.delete(order);
-            log.info("Deleted empty order: {}", order.getId());
-        } else {
-            order.setTotalPrice(order.getOrderLines().stream()
-                    .map(OrderLine::getPrice)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add));
-            orderRepository.save(order);
-            log.info("Updated remaining order: {}", order.getId());
-        }
+    private void removeSelectedItemsFromOrder(Order existingOrder, List<OrderLine> selectedOrderLines) {
+        List<OrderLine> remainingOrderLines = existingOrder.getOrderLines().stream()
+                .filter(orderLine -> selectedOrderLines.stream()
+                        .noneMatch(selected -> selected.getProduct().getId().equals(orderLine.getProduct().getId())))
+                .collect(Collectors.toList());
+        existingOrder.setOrderLines(remainingOrderLines);
+        orderRepository.save(existingOrder);
     }
 
     @Transactional
@@ -218,35 +194,42 @@ public class PaymentService {
 
         updateProductQuantity(order, true);
 
+        Long userId = order.getUser().getId();
+        order.getOrderLines().forEach(orderLine -> {
+            Map<String, Object> event = Map.of(
+                    "userId", userId,
+                    "productId", orderLine.getProduct().getId(),
+                    "quantity", orderLine.getQuantity(),
+                    "toppingIds", orderLine.getSelectedToppings().stream()
+                            .map(Topping::getId)
+                            .collect(Collectors.toList()),
+                    "action", "ADD"
+            );
+            try {
+                kafkaProducerService.sendMessage("cart-topic", objectMapper.writeValueAsString(event));
+            } catch (Exception e) {
+                log.error("Error sending Kafka event for product {}: {}", orderLine.getProduct().getId(), e.getMessage(), e);
+            }
+        });
+
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
 
         notificationService.cancelPaymentedNotification(order);
     }
 
-    private void updateProductQuantity(Order order, boolean isRestoring) {
-        List<OrderLine> orderLines = order.getOrderLines();
-        if (orderLines == null || orderLines.isEmpty()) {
-            log.warn("No order lines found for order {}", order.getId());
-            return;
-        }
-
-        for (OrderLine orderLine : orderLines) {
+    private void updateProductQuantity(Order order, boolean isCancel) {
+        order.getOrderLines().forEach(orderLine -> {
             Product product = productRepository.findById(orderLine.getProduct().getId())
                     .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
-
-            if (isRestoring) {
-                product.setAvailableQuantity(product.getAvailableQuantity() + orderLine.getQuantity());
-                log.info("Restored {} units to product {}", orderLine.getQuantity(), product.getId());
-            } else {
-                int newQuantity = product.getAvailableQuantity() - orderLine.getQuantity();
-                if (newQuantity < 0) {
-                    throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
-                }
-                product.setAvailableQuantity(newQuantity);
-                log.info("Reduced {} units from product {}", orderLine.getQuantity(), product.getId());
+            int newQuantity = isCancel
+                    ? product.getAvailableQuantity() + orderLine.getQuantity()
+                    : product.getAvailableQuantity() - orderLine.getQuantity();
+            if (newQuantity < 0) {
+                throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
             }
+            product.setAvailableQuantity(newQuantity);
             productRepository.save(product);
-        }
+        });
     }
 }
