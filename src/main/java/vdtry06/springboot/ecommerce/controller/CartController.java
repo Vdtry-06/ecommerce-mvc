@@ -87,4 +87,14 @@ public class CartController {
                 .data(null)
                 .build();
     }
+
+    @DeleteMapping("/{userId}/order/{orderId}")
+    public ApiResponse<Void> removeCartItemsByOrderId(@PathVariable Long userId, @PathVariable Long orderId) {
+        log.info("Removing cart items for user: {}, order: {}", userId, orderId);
+        redisCartService.removeCartItemsByOrderId(userId, orderId);
+        return ApiResponse.<Void>builder()
+                .message("Cart items for order removed successfully")
+                .data(null)
+                .build();
+    }
 }
