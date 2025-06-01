@@ -8,6 +8,7 @@ import java.util.StringJoiner;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -45,6 +46,7 @@ import vdtry06.springboot.ecommerce.repository.UserRepository;
 public class AuthenticationService {
     UserRepository userRepository;
     InvalidatedTokenRepository invalidatedTokenRepository;
+    CartService cartService;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -82,7 +84,9 @@ public class AuthenticationService {
                 .build();
     }
 
-    public void logout(LogoutRequest request) throws ParseException, JOSEException {
+    public void logout(Long userId, LogoutRequest request) throws ParseException, JOSEException {
+        cartService.syncCartToDatabase(userId);
+        SecurityContextHolder.clearContext();
         try {
             var signToken = verifyToken(request.getToken(), true);
 

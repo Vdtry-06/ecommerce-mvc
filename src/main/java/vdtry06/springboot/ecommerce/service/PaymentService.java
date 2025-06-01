@@ -6,6 +6,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vdtry06.springboot.ecommerce.config.payment.VNPAYConfig;
@@ -35,48 +36,20 @@ import java.util.stream.Collectors;
 public class PaymentService {
     PaymentRepository paymentRepository;
     OrderRepository orderRepository;
-    OrderLineRepository orderLineRepository;
-    ProductRepository productRepository;
     NotificationService notificationService;
     VNPAYConfig vnpayConfig;
-    KafkaProducerService kafkaProducerService;
-    ObjectMapper objectMapper;
+    CartService cartService;
+    ProductRepository productRepository;
+    RedisTemplate<String, Object> redisTemplate;
 
     @Transactional
-    public VNPayResponse createVNPayPaymentForSelectedItems(HttpServletRequest request, List<OrderLine> selectedOrderLines, Long userId) {
-        if (selectedOrderLines == null || selectedOrderLines.isEmpty()) {
+    public VNPayResponse createVNPayPaymentForSelectedItems(HttpServletRequest request, Long userId, List<Long> selectedProductIds) {
+        if (selectedProductIds == null || selectedProductIds.isEmpty()) {
             throw new AppException(ErrorCode.NO_ITEMS_SELECTED);
         }
 
-        BigDecimal totalPrice = selectedOrderLines.stream()
-                .map(OrderLine::getPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        User user = User.builder().id(userId).build();
-
-        List<Order> pendingOrders = orderRepository.findByUserIdAndStatus(userId, OrderStatus.PENDING);
-        Order existingPendingOrder = pendingOrders.isEmpty() ? null : pendingOrders.get(0);
-
-        Order paymentOrder;
-        if (existingPendingOrder != null) {
-            paymentOrder = createNewOrderForPayment(user, selectedOrderLines, totalPrice);
-            removeSelectedItemsFromOrder(existingPendingOrder, selectedOrderLines);
-        } else {
-            paymentOrder = createNewOrderForPayment(user, selectedOrderLines, totalPrice);
-        }
-
-        selectedOrderLines.forEach(line -> {
-            Map<String, Object> event = Map.of(
-                    "userId", userId,
-                    "productId", line.getProduct().getId(),
-                    "action", "REMOVE"
-            );
-            try {
-                kafkaProducerService.sendMessage("cart-topic", objectMapper.writeValueAsString(event));
-            } catch (Exception e) {
-                log.error("Error sending Kafka event for product {}: {}", line.getProduct().getId(), e.getMessage(), e);
-            }
-        });
+        Order paymentOrder = cartService.checkoutSelectedItems(userId, selectedProductIds);
+        BigDecimal totalPrice = paymentOrder.getTotalPrice();
 
         long amount = totalPrice.multiply(BigDecimal.valueOf(100)).longValue();
         String bankCode = request.getParameter("bankCode");
@@ -165,6 +138,16 @@ public class PaymentService {
             order.setStatus(OrderStatus.PAID);
             orderRepository.save(order);
 
+            // Remove selected items from Redis cart
+            Long userId = order.getUser().getId();
+            String cartKey = "cart:user:" + userId;
+            List<OrderLine> orderLines = order.getOrderLines();
+            for (OrderLine orderLine : orderLines) {
+                Long productId = orderLine.getProduct().getId();
+                redisTemplate.opsForHash().delete(cartKey, productId.toString());
+                log.info("Removed product {} from cart:user:{}", productId, userId);
+            }
+
             User user = order.getUser();
             if (user != null) {
                 notificationService.createPaymentNotification(user, payment, order);
@@ -194,42 +177,35 @@ public class PaymentService {
 
         updateProductQuantity(order, true);
 
-        Long userId = order.getUser().getId();
-        order.getOrderLines().forEach(orderLine -> {
-            Map<String, Object> event = Map.of(
-                    "userId", userId,
-                    "productId", orderLine.getProduct().getId(),
-                    "quantity", orderLine.getQuantity(),
-                    "toppingIds", orderLine.getSelectedToppings().stream()
-                            .map(Topping::getId)
-                            .collect(Collectors.toList()),
-                    "action", "ADD"
-            );
-            try {
-                kafkaProducerService.sendMessage("cart-topic", objectMapper.writeValueAsString(event));
-            } catch (Exception e) {
-                log.error("Error sending Kafka event for product {}: {}", orderLine.getProduct().getId(), e.getMessage(), e);
-            }
-        });
-
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
 
         notificationService.cancelPaymentedNotification(order);
     }
 
-    private void updateProductQuantity(Order order, boolean isCancel) {
-        order.getOrderLines().forEach(orderLine -> {
+    private void updateProductQuantity(Order order, boolean isRestoring) {
+        List<OrderLine> orderLines = order.getOrderLines();
+        if (orderLines == null || orderLines.isEmpty()) {
+            log.warn("No order lines found for order {}", order.getId());
+            return;
+        }
+
+        for (OrderLine orderLine : orderLines) {
             Product product = productRepository.findById(orderLine.getProduct().getId())
                     .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
-            int newQuantity = isCancel
-                    ? product.getAvailableQuantity() + orderLine.getQuantity()
-                    : product.getAvailableQuantity() - orderLine.getQuantity();
-            if (newQuantity < 0) {
-                throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
+
+            if (isRestoring) {
+                product.setAvailableQuantity(product.getAvailableQuantity() + orderLine.getQuantity());
+                log.info("Restored {} units to product {}", orderLine.getQuantity(), product.getId());
+            } else {
+                int newQuantity = product.getAvailableQuantity() - orderLine.getQuantity();
+                if (newQuantity < 0) {
+                    throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
+                }
+                product.setAvailableQuantity(newQuantity);
+                log.info("Reduced {} units from product {}", orderLine.getQuantity(), product.getId());
             }
-            product.setAvailableQuantity(newQuantity);
             productRepository.save(product);
-        });
+        }
     }
 }
