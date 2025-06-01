@@ -1,5 +1,7 @@
 package vdtry06.springboot.ecommerce.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -8,6 +10,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vdtry06.springboot.ecommerce.constant.OrderStatus;
+import vdtry06.springboot.ecommerce.dto.request.OrderLineRequest;
+import vdtry06.springboot.ecommerce.entity.CartItem;
 import vdtry06.springboot.ecommerce.entity.Order;
 import vdtry06.springboot.ecommerce.entity.OrderLine;
 import vdtry06.springboot.ecommerce.mapper.OrderMapper;
@@ -24,6 +28,8 @@ import vdtry06.springboot.ecommerce.repository.UserRepository;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -34,18 +40,19 @@ public class OrderService {
     UserRepository userRepository;
     OrderMapper orderMapper;
     OrderLineService orderLineService;
-    RedisCartService redisCartService;
     CartItemRepository cartItemRepository;
+    ObjectMapper objectMapper;
+    KafkaProducerService kafkaProducerService;
 
     @Transactional
     public OrderResponse confirmOrder(Long userId) {
-        OrderRequest request = redisCartService.getCartAsOrderRequest(userId);
-        if (request.getOrderLines().isEmpty()) {
-            throw new AppException(ErrorCode.CART_EMPTY);
-        }
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        List<CartItem> cartItems = cartItemRepository.findByUserId(userId);
+        if (cartItems.isEmpty()) {
+            throw new AppException(ErrorCode.CART_EMPTY);
+        }
 
         Order order = Order.builder()
                 .user(user)
@@ -59,11 +66,29 @@ public class OrderService {
         orderRepository.save(order);
         log.info("Saved order: {}", order.getId());
 
-        request.getOrderLines().forEach(orderLineRequest ->
+        List<OrderLineRequest> orderLines = cartItems.stream()
+                .map(item -> OrderLineRequest.builder()
+                        .productId(item.getProductId())
+                        .quantity(item.getQuantity())
+                        .toppingIds(item.getToppingIds() != null ?
+                                objectMapper.convertValue(item.getToppingIds(), new TypeReference<Set<Long>>() {}) :
+                                Set.of())
+                        .build())
+                .toList();
+
+        orderLines.forEach(orderLineRequest ->
                 orderLineService.addOrderLine(order.getId(), orderLineRequest));
 
-        redisCartService.clearCart(userId); // Xóa giỏ hàng
-        cartItemRepository.deleteByUserId(userId);
+        Map<String, Object> event = Map.of(
+                "userId", userId,
+                "orderId", order.getId(),
+                "action", "CLEAR_ORDER_ITEMS"
+        );
+        try {
+            kafkaProducerService.sendMessage("cart-topic", objectMapper.writeValueAsString(event));
+        } catch (Exception e) {
+            log.error("Error sending Kafka event for order {}: {}", order.getId(), e.getMessage(), e);
+        }
 
         return orderMapper.toOrderResponse(orderRepository.findById(order.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND)));
@@ -124,6 +149,18 @@ public class OrderService {
         if (order.getStatus() != OrderStatus.PENDING) {
             throw new AppException(ErrorCode.ORDER_STATE_PENDING);
         }
+        Long userId = order.getUser().getId();
+        Map<String, Object> event = Map.of(
+                "userId", userId,
+                "orderId", orderId,
+                "action", "CLEAR_ORDER_ITEMS"
+        );
+        try {
+            kafkaProducerService.sendMessage("cart-topic", objectMapper.writeValueAsString(event));
+        } catch (Exception e) {
+            log.error("Error sending Kafka event for order {}: {}", orderId, e.getMessage(), e);
+        }
+
         orderRepository.deleteById(orderId);
     }
 }
