@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,37 +36,29 @@ public class PaymentController {
     PaymentService paymentService;
     OrderRepository orderRepository;
     OrderService orderService;
+    RedisTemplate<String, Object> redisTemplate;
 
     @PostMapping("/vn-pay-selected")
     public ApiResponse<VNPayResponse> paySelectedItems(HttpServletRequest request, @RequestBody Map<String, Object> body) {
         try {
             Long userId = ((Number) body.get("userId")).longValue();
-            List<Map<String, Object>> orderLinesData = (List<Map<String, Object>>) body.get("orderLines");
+            List<Long> selectedProductIds = ((List<?>) body.get("selectedProductIds")).stream()
+                    .map(id -> ((Number) id).longValue())
+                    .collect(Collectors.toList());
 
-            if (orderLinesData == null || orderLinesData.isEmpty()) {
+            if (selectedProductIds == null || selectedProductIds.isEmpty()) {
                 return ApiResponse.<VNPayResponse>builder()
                         .code(400)
                         .message("No items selected for payment")
                         .build();
             }
 
-            List<OrderLine> selectedOrderLines = orderLinesData.stream().map(data -> {
-                OrderLine orderLine = new OrderLine();
-                Long productId = ((Number) data.get("productId")).longValue();
-                Integer quantity = ((Number) data.get("quantity")).intValue();
-                BigDecimal price = new BigDecimal(data.get("price").toString());
+            log.info("Processing payment for userId={}, selectedProductIds={}", userId, selectedProductIds);
 
-                orderLine.setProduct(Product.builder().id(productId).build());
-                orderLine.setQuantity(quantity);
-                orderLine.setPrice(price);
-
-                log.info("Processing order line for payment: productId={}, quantity={}, price={}", productId, quantity, price);
-                return orderLine;
-            }).collect(Collectors.toList());
-
-            VNPayResponse vnPayResponse = paymentService.createVNPayPaymentForSelectedItems(request, selectedOrderLines, userId);
+            VNPayResponse vnPayResponse = paymentService.createVNPayPaymentForSelectedItems(request, userId, selectedProductIds);
 
             return ApiResponse.<VNPayResponse>builder()
+                    .code(1000)
                     .message("VN payment requested for selected items")
                     .data(vnPayResponse)
                     .build();
@@ -102,12 +95,22 @@ public class PaymentController {
                 log.info("Payment successful for order: {}", orderId);
                 paymentService.updateOrderToPaid(order);
                 return ResponseEntity.status(HttpStatus.FOUND)
-                        .location(URI.create("http://localhost:3000/"))
+                        .location(URI.create("http://localhost:3000/cart?payment=success"))
                         .build();
             } else {
                 log.warn("Payment failed for order: {}, status: {}", orderId, status);
                 order.setStatus(OrderStatus.CANCELLED);
                 orderRepository.save(order);
+
+                // Deselect and remove items from Redis on cancellation
+                Long userId = order.getUser().getId();
+                String cartKey = "cart:user:" + userId;
+                for (OrderLine orderLine : order.getOrderLines()) {
+                    Long productId = orderLine.getProduct().getId();
+                    redisTemplate.opsForHash().delete(cartKey, productId.toString());
+                    log.info("Removed product {} from cart:user:{}", productId, userId);
+                }
+
                 return ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create("http://localhost:3000/checkout?error=payment_failed"))
                         .build();
@@ -133,6 +136,58 @@ public class PaymentController {
             return ApiResponse.<Void>builder()
                     .code(500)
                     .message("Error cancelling payment: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    @GetMapping("/zalo-pay-callback")
+    public ResponseEntity<Void> zaloPayCallback(HttpServletRequest request) {
+        try {
+            String status = request.getParameter("status"); // Adjust based on ZaloPay API
+            String orderIdStr = request.getParameter("orderId"); // Adjust based on ZaloPay API
+
+            log.info("ZaloPay callback received: status={}, orderId={}", status, orderIdStr);
+
+            if (orderIdStr == null || orderIdStr.isEmpty()) {
+                log.error("Invalid order ID in ZaloPay callback");
+                return ResponseEntity.badRequest().build();
+            }
+
+            Long orderId = Long.parseLong(orderIdStr);
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> {
+                        log.error("Order not found: {}", orderId);
+                        return new AppException(ErrorCode.ORDER_NOT_FOUND);
+                    });
+
+            if ("1".equals(status)) { // Assume "1" is success for ZaloPay
+                log.info("ZaloPay payment successful for order: {}", orderId);
+                paymentService.updateOrderToPaid(order);
+                return ResponseEntity.status(HttpStatus.FOUND)
+                        .location(URI.create("http://localhost:3000/cart?payment=success"))
+                        .build();
+            } else {
+                log.warn("ZaloPay payment failed/canceled for order: {}, status: {}", orderId, status);
+                order.setStatus(OrderStatus.CANCELLED);
+                orderRepository.save(order);
+
+                // Deselect and remove items from Redis on cancellation
+                Long userId = order.getUser().getId();
+                String cartKey = "cart:user:" + userId;
+                for (OrderLine orderLine : order.getOrderLines()) {
+                    Long productId = orderLine.getProduct().getId();
+                    redisTemplate.opsForHash().delete(cartKey, productId.toString());
+                    log.info("Removed product {} from cart:user:{}", productId, userId);
+                }
+
+                return ResponseEntity.status(HttpStatus.FOUND)
+                        .location(URI.create("http://localhost:3000/checkout?error=payment_failed"))
+                        .build();
+            }
+        } catch (Exception e) {
+            log.error("Error processing ZaloPay callback: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create("http://localhost:3000/checkout?error=system_error"))
                     .build();
         }
     }

@@ -1,100 +1,215 @@
 package vdtry06.springboot.ecommerce.controller;
 
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.web.bind.annotation.*;
 import vdtry06.springboot.ecommerce.dto.ApiResponse;
+import vdtry06.springboot.ecommerce.dto.CartItem;
 import vdtry06.springboot.ecommerce.dto.request.OrderLineRequest;
-import vdtry06.springboot.ecommerce.dto.response.OrderLineResponse;
-import vdtry06.springboot.ecommerce.dto.response.OrderResponse;
-import vdtry06.springboot.ecommerce.service.OrderService;
-import vdtry06.springboot.ecommerce.service.RedisCartService;
+import vdtry06.springboot.ecommerce.exception.AppException;
+import vdtry06.springboot.ecommerce.service.CartService;
 
-import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-@Slf4j
 @RestController
 @RequestMapping("/cart")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Log4j2
 public class CartController {
-    RedisCartService redisCartService;
-    OrderService orderService;
+    CartService cartService;
 
     @PostMapping("/{userId}/add")
-    public ApiResponse<OrderLineResponse> addToCart(@PathVariable Long userId, @RequestBody OrderLineRequest request) {
-        log.info("Adding product to cart for user: {}", userId);
-        OrderLineResponse response = redisCartService.addOrUpdateCartLine(userId, request);
-        return ApiResponse.<OrderLineResponse>builder()
-                .message("Product added to cart successfully")
-                .data(response)
-                .build();
+    public ApiResponse<Void> addToCart(@PathVariable Long userId, @Valid @RequestBody OrderLineRequest request) {
+        try {
+            cartService.addToCart(userId, request.getProductId(), request.getQuantity(), request.getToppingIds());
+            return ApiResponse.<Void>builder()
+                    .code(1000)
+                    .message("Product added to cart successfully")
+                    .build();
+        } catch (AppException e) {
+            log.error("Error adding to cart for user {}: {}", userId, e.getMessage(), e);
+            return ApiResponse.<Void>builder()
+                    .code(e.getErrorCode().getCode())
+                    .message(e.getMessage())
+                    .build();
+        } catch (Exception e) {
+            log.error("Unexpected error adding to cart for user {}: {}", userId, e.getMessage(), e);
+            return ApiResponse.<Void>builder()
+                    .code(500)
+                    .message("Unexpected error: " + e.getMessage())
+                    .build();
+        }
     }
 
-    @GetMapping("/{userId}")
-    public ApiResponse<List<OrderLineResponse>> getCart(@PathVariable Long userId) {
-        log.info("Fetching cart for user: {}", userId);
-        List<OrderLineResponse> cart = redisCartService.getCart(userId);
-        return ApiResponse.<List<OrderLineResponse>>builder()
-                .message("Cart fetched successfully")
-                .data(cart)
-                .build();
-    }
-
-    @PutMapping("/{userId}/update/{productId}")
-    public ApiResponse<OrderLineResponse> updateCartLine(
-            @PathVariable Long userId,
-            @PathVariable Long productId,
-            @RequestBody OrderLineRequest request) {
-        log.info("Updating cart line for user: {}, product: {}", userId, productId);
-        OrderLineResponse response = redisCartService.updateCartLine(userId, productId, request);
-        return ApiResponse.<OrderLineResponse>builder()
-                .message("Cart line updated successfully")
-                .data(response)
-                .build();
+    @PutMapping("/{userId}/update")
+    public ApiResponse<Void> updateCartItem(@PathVariable Long userId, @Valid @RequestBody OrderLineRequest request) {
+        try {
+            cartService.updateCartItem(userId, request.getProductId(), request.getQuantity(), request.getToppingIds());
+            return ApiResponse.<Void>builder()
+                    .code(1000)
+                    .message("Cart item updated successfully")
+                    .build();
+        } catch (AppException e) {
+            log.error("Error updating cart item for user {}: {}", userId, e.getMessage(), e);
+            return ApiResponse.<Void>builder()
+                    .code(e.getErrorCode().getCode())
+                    .message(e.getMessage())
+                    .build();
+        } catch (Exception e) {
+            log.error("Unexpected error updating cart item for user {}: {}", userId, e.getMessage(), e);
+            return ApiResponse.<Void>builder()
+                    .code(500)
+                    .message("Unexpected error: " + e.getMessage())
+                    .build();
+        }
     }
 
     @DeleteMapping("/{userId}/remove/{productId}")
-    public ApiResponse<Void> removeCartLine(
-            @PathVariable Long userId,
-            @PathVariable Long productId) {
-        log.info("Removing product {} from cart for user: {}", productId, userId);
-        redisCartService.removeCartLine(userId, productId);
-        return ApiResponse.<Void>builder()
-                .message("Product removed from cart successfully")
-                .data(null)
-                .build();
+    public ApiResponse<Void> removeCartItem(@PathVariable Long userId, @PathVariable Long productId) {
+        try {
+            cartService.removeCartItem(userId, productId);
+            return ApiResponse.<Void>builder()
+                    .code(1000)
+                    .message("Product removed from cart successfully")
+                    .build();
+        } catch (AppException e) {
+            log.error("Error removing cart item for user {}: {}", userId, e.getMessage(), e);
+            return ApiResponse.<Void>builder()
+                    .code(e.getErrorCode().getCode())
+                    .message(e.getMessage())
+                    .build();
+        } catch (Exception e) {
+            log.error("Unexpected error removing cart item for user {}: {}", userId, e.getMessage(), e);
+            return ApiResponse.<Void>builder()
+                    .code(500)
+                    .message("Unexpected error: " + e.getMessage())
+                    .build();
+        }
     }
 
-    @PostMapping("/{userId}/confirm")
-    public ApiResponse<OrderResponse> confirmCart(@PathVariable Long userId) {
-        log.info("Confirming cart for user: {}", userId);
-        OrderResponse orderResponse = orderService.confirmOrder(userId);
-        return ApiResponse.<OrderResponse>builder()
-                .message("Cart confirmed and order created successfully")
-                .data(orderResponse)
-                .build();
+    @GetMapping("/{userId}")
+    public ApiResponse<Map<Long, CartItem>> getCart(@PathVariable Long userId) {
+        try {
+            Map<Long, CartItem> cart = cartService.getCart(userId);
+            return ApiResponse.<Map<Long, CartItem>>builder()
+                    .code(1000)
+                    .message("Cart retrieved successfully")
+                    .data(cart)
+                    .build();
+        } catch (AppException e) {
+            log.error("Error retrieving cart for user {}: {}", userId, e.getMessage(), e);
+            return ApiResponse.<Map<Long, CartItem>>builder()
+                    .code(e.getErrorCode().getCode())
+                    .message(e.getMessage())
+                    .build();
+        } catch (Exception e) {
+            log.error("Unexpected error retrieving cart for user {}: {}", userId, e.getMessage(), e);
+            return ApiResponse.<Map<Long, CartItem>>builder()
+                    .code(500)
+                    .message("Unexpected error: " + e.getMessage())
+                    .build();
+        }
     }
 
-    @DeleteMapping("/{userId}/clear")
-    public ApiResponse<Void> clearCart(@PathVariable Long userId) {
-        log.info("Clearing cart for user: {}", userId);
-        redisCartService.clearCart(userId);
-        return ApiResponse.<Void>builder()
-                .message("Cart cleared successfully")
-                .data(null)
-                .build();
+    @PutMapping("/toggle-select")
+    public ApiResponse<Void> toggleSelectItem(@Valid @RequestBody ToggleSelectRequest request) {
+        try {
+            cartService.toggleSelectItem(request.userId(), request.productId(), request.selected());
+            return ApiResponse.<Void>builder()
+                    .code(1000)
+                    .message("Item selection updated successfully")
+                    .build();
+        } catch (AppException e) {
+            log.error("Error toggling item selection for user {}: {}", request.userId(), e.getMessage(), e);
+            return ApiResponse.<Void>builder()
+                    .code(e.getErrorCode().getCode())
+                    .message(e.getMessage())
+                    .build();
+        } catch (Exception e) {
+            log.error("Unexpected error toggling item selection for user {}: {}", request.userId(), e.getMessage(), e);
+            return ApiResponse.<Void>builder()
+                    .code(500)
+                    .message("Unexpected error: " + e.getMessage())
+                    .build();
+        }
     }
 
-    @DeleteMapping("/{userId}/order/{orderId}")
-    public ApiResponse<Void> removeCartItemsByOrderId(@PathVariable Long userId, @PathVariable Long orderId) {
-        log.info("Removing cart items for user: {}, order: {}", userId, orderId);
-        redisCartService.removeCartItemsByOrderId(userId, orderId);
-        return ApiResponse.<Void>builder()
-                .message("Cart items for order removed successfully")
-                .data(null)
-                .build();
+    @PostMapping("/guest/add")
+    public ApiResponse<Void> addToGuestCart(@Valid @RequestBody GuestCartRequest request) {
+        try {
+            cartService.addToGuestCart(request.sessionId(), request.productId(), request.quantity(), request.toppingIds());
+            return ApiResponse.<Void>builder()
+                    .code(1000)
+                    .message("Product added to guest cart successfully")
+                    .build();
+        } catch (AppException e) {
+            log.error("Error adding to guest cart for session {}: {}", request.sessionId(), e.getMessage(), e);
+            return ApiResponse.<Void>builder()
+                    .code(e.getErrorCode().getCode())
+                    .message(e.getMessage())
+                    .build();
+        } catch (Exception e) {
+            log.error("Unexpected error adding to guest cart for session {}: {}", request.sessionId(), e.getMessage(), e);
+            return ApiResponse.<Void>builder()
+                    .code(500)
+                    .message("Unexpected error: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    @GetMapping("/guest/{sessionId}")
+    public ApiResponse<Map<Long, CartItem>> getGuestCart(@PathVariable String sessionId) {
+        try {
+            Map<Long, CartItem> cart = cartService.getGuestCart(sessionId);
+            return ApiResponse.<Map<Long, CartItem>>builder()
+                    .code(1000)
+                    .message("Guest cart retrieved successfully")
+                    .data(cart)
+                    .build();
+        } catch (AppException e) {
+            log.error("Error retrieving guest cart for session {}: {}", sessionId, e.getMessage(), e);
+            return ApiResponse.<Map<Long, CartItem>>builder()
+                    .code(e.getErrorCode().getCode())
+                    .message(e.getMessage())
+                    .build();
+        } catch (Exception e) {
+            log.error("Unexpected error retrieving guest cart for session {}: {}", sessionId, e.getMessage(), e);
+            return ApiResponse.<Map<Long, CartItem>>builder()
+                    .code(500)
+                    .message("Unexpected error: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    @PostMapping("/merge-guest-cart")
+    public ApiResponse<Void> mergeGuestCart(@Valid @RequestBody MergeGuestCartRequest request) {
+        try {
+            cartService.mergeGuestCartToUserCart(request.sessionId(), request.userId());
+            return ApiResponse.<Void>builder()
+                    .code(1000)
+                    .message("Guest cart merged successfully")
+                    .build();
+        } catch (AppException e) {
+            log.error("Error merging guest cart for session {} to user {}: {}", request.sessionId(), request.userId(), e.getMessage(), e);
+            return ApiResponse.<Void>builder()
+                    .code(e.getErrorCode().getCode())
+                    .message(e.getMessage())
+                    .build();
+        } catch (Exception e) {
+            log.error("Unexpected error merging guest cart for session {} to user {}: {}", request.sessionId(), request.userId(), e.getMessage(), e);
+            return ApiResponse.<Void>builder()
+                    .code(500)
+                    .message("Unexpected error: " + e.getMessage())
+                    .build();
+        }
     }
 }
+
+record ToggleSelectRequest(Long userId, Long productId, Boolean selected) {}
+record GuestCartRequest(String sessionId, Long productId, Integer quantity, Set<Long> toppingIds) {}
+record MergeGuestCartRequest(String sessionId, Long userId) {}
