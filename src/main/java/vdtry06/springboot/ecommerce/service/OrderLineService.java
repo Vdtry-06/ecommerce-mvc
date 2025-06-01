@@ -22,7 +22,6 @@ import vdtry06.springboot.ecommerce.repository.ToppingRepository;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,13 +35,13 @@ public class OrderLineService {
     ProductRepository productRepository;
     OrderLineMapper orderLineMapper;
     ToppingRepository toppingRepository;
-    CartUtilityService cartUtilityService;
+    CartService cartService;
 
     @Transactional
     public OrderLineResponse addOrderLine(Long orderId, OrderLineRequest request) {
         Order order = validateOrder(orderId);
         Product product = validateProduct(request.getProductId(), request.getQuantity());
-        Set<Topping> toppings = cartUtilityService.validateToppings(request.getToppingIds(), product);
+        Set<Topping> toppings = cartService.validateToppings(request.getToppingIds(), product);
         OrderLine orderLine = orderLineRepository.findByOrderIdAndProductId(orderId, request.getProductId())
                 .map(existing -> updateExistingOrderLine(
                         existing,
@@ -103,7 +102,7 @@ public class OrderLineService {
                     toppings = Set.of();
                     log.info("Cleared all toppings for order line: {}", orderLineId);
                 } else {
-                    toppings = cartUtilityService.validateToppings(request.getToppingIds(), product);
+                    toppings = cartService.validateToppings(request.getToppingIds(), product);
                     orderLine.setSelectedToppings(toppings);
                     log.info("Updated toppings for order line: {} to: {}", orderLineId, toppings);
                 }
@@ -113,7 +112,7 @@ public class OrderLineService {
             }
         }
         try {
-            orderLine.setPrice(cartUtilityService.calculatePrice(product, quantity, toppings));
+            orderLine.setPrice(cartService.calculatePrice(product, quantity, toppings));
             log.debug("Recalculated price: {}", orderLine.getPrice());
         } catch (Exception e) {
             log.error("Failed to calculate price for order line: {}", orderLineId, e);
@@ -178,7 +177,7 @@ public class OrderLineService {
     private OrderLine updateExistingOrderLine(OrderLine existing, OrderLineRequest request, Product product, Set<Topping> toppings) {
         existing.setQuantity(existing.getQuantity() + request.getQuantity());
         existing.setSelectedToppings(toppings);
-        existing.setPrice(cartUtilityService.calculatePrice(product, existing.getQuantity(), toppings));
+        existing.setPrice(cartService.calculatePrice(product, existing.getQuantity(), toppings));
         return existing;
     }
 
@@ -187,7 +186,7 @@ public class OrderLineService {
                 .order(order)
                 .product(product)
                 .quantity(request.getQuantity())
-                .price(cartUtilityService.calculatePrice(product, request.getQuantity(), toppings))
+                .price(cartService.calculatePrice(product, request.getQuantity(), toppings))
                 .selectedToppings(toppings)
                 .build();
     }
