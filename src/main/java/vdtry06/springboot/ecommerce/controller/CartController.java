@@ -7,7 +7,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.web.bind.annotation.*;
 import vdtry06.springboot.ecommerce.dto.ApiResponse;
-import vdtry06.springboot.ecommerce.dto.CartItem;
+import vdtry06.springboot.ecommerce.dto.response.CartItem;
 import vdtry06.springboot.ecommerce.dto.request.OrderLineRequest;
 import vdtry06.springboot.ecommerce.exception.AppException;
 import vdtry06.springboot.ecommerce.service.CartService;
@@ -26,7 +26,7 @@ public class CartController {
     @PostMapping("/{userId}/add")
     public ApiResponse<Void> addToCart(@PathVariable Long userId, @Valid @RequestBody OrderLineRequest request) {
         try {
-            cartService.addToCart(userId, request.getProductId(), request.getQuantity(), request.getToppingIds());
+            cartService.addCartItem(userId, request);
             return ApiResponse.<Void>builder()
                     .code(1000)
                     .message("Product added to cart successfully")
