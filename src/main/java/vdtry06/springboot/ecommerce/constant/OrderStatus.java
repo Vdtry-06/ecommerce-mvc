@@ -8,4 +8,5 @@ public enum OrderStatus {
     CANCELLED,
     COMPLETED,
     CASH_ON_DELIVERY,
+    EXPIRED,
 }
