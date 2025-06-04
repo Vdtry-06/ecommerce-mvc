@@ -1,5 +1,6 @@
 package vdtry06.springboot.ecommerce.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -8,7 +9,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vdtry06.springboot.ecommerce.constant.OrderStatus;
-import vdtry06.springboot.ecommerce.dto.CartItem;
+import vdtry06.springboot.ecommerce.dto.request.OrderLineRequest;
+import vdtry06.springboot.ecommerce.dto.response.CartItem;
 import vdtry06.springboot.ecommerce.entity.*;
 import vdtry06.springboot.ecommerce.exception.AppException;
 import vdtry06.springboot.ecommerce.exception.ErrorCode;
@@ -27,19 +29,48 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CartService {
+    private static final String CART_USER_PREFIX = "cart:user:";
+    private static final String CART_GUEST_PREFIX = "cart:guest:";
+    private static final long CART_EXPIRATION_SECONDS = 60; // 10 giây để test
+    private static final TimeUnit TIME_UNIT = TimeUnit.SECONDS;
+
     RedisTemplate<String, Object> redisTemplate;
     OrderRepository orderRepository;
     OrderLineRepository orderLineRepository;
     ProductRepository productRepository;
     ToppingRepository toppingRepository;
+    ObjectMapper objectMapper;
 
-    public void addToCart(Long userId, Long productId, Integer quantity, Set<Long> toppingIds) {
+    public void addCartItem(Long userId, OrderLineRequest request) {
         String cartKey = "cart:user:" + userId;
-        addToCartInternal(cartKey, productId, quantity, toppingIds);
+        Product product = productRepository.findById(request.getProductId())
+                .orElseThrow(() -> {
+                    log.error("Product not found: {}", request.getProductId());
+                    return new IllegalArgumentException("Product not found: " + request.getProductId());
+                });
+
+        CartItem cartItem = new CartItem();
+        cartItem.setProductId(request.getProductId());
+        cartItem.setProductName(product.getName());
+        cartItem.setPrice(product.getPrice());
+        cartItem.setProductImageUrl(product.getImageUrls().getFirst());
+        cartItem.setQuantity(request.getQuantity());
+        cartItem.setSelected(false);
+        cartItem.setToppingIds(new HashSet<>(request.getToppingIds()));
+
+        try {
+            String cartItemJson = objectMapper.writeValueAsString(cartItem);
+            redisTemplate.opsForHash().put(cartKey, String.valueOf(request.getProductId()), cartItemJson);
+            redisTemplate.expire(cartKey, CART_EXPIRATION_SECONDS, TimeUnit.SECONDS);
+            log.info("Added product: {} to cart for user: {}", request.getProductId(), userId);
+        } catch (Exception e) {
+            log.error("Failed to add cart item to Redis for user {}: {}", userId, e.getMessage());
+            throw new RuntimeException("Failed to add cart item to Redis", e);
+        }
     }
 
     public void addToGuestCart(String sessionId, Long productId, Integer quantity, Set<Long> toppingIds) {
-        String cartKey = "cart:guest:" + sessionId;
+        String cartKey = CART_GUEST_PREFIX + sessionId;
         addToCartInternal(cartKey, productId, quantity, toppingIds);
     }
 
@@ -58,13 +89,12 @@ public class CartService {
                 .build();
 
         redisTemplate.opsForHash().put(cartKey, productId.toString(), cartItem);
-        redisTemplate.expire(cartKey, 7, TimeUnit.DAYS);
-
-        log.info("Added product {} to cart {}", productId, cartKey);
+        redisTemplate.expire(cartKey, CART_EXPIRATION_SECONDS, TIME_UNIT);
+        log.info("Added product {} to cart {} with TTL {} seconds", productId, cartKey, CART_EXPIRATION_SECONDS);
     }
 
     public void updateCartItem(Long userId, Long productId, Integer quantity, Set<Long> toppingIds) {
-        String cartKey = "cart:user:" + userId;
+        String cartKey = CART_USER_PREFIX + userId;
         CartItem cartItem = (CartItem) redisTemplate.opsForHash().get(cartKey, productId.toString());
         if (cartItem == null) {
             throw new AppException(ErrorCode.CART_ITEM_NOT_FOUND);
@@ -85,22 +115,23 @@ public class CartService {
         }
 
         redisTemplate.opsForHash().put(cartKey, productId.toString(), cartItem);
-        log.info("Updated cart item {} for user {}", productId, userId);
+        redisTemplate.expire(cartKey, CART_EXPIRATION_SECONDS, TIME_UNIT); // Đặt lại TTL
+        log.info("Updated cart item {} for user {} with TTL {} seconds", productId, userId, CART_EXPIRATION_SECONDS);
     }
 
     public void removeCartItem(Long userId, Long productId) {
-        String cartKey = "cart:user:" + userId;
+        String cartKey = CART_USER_PREFIX + userId;
         redisTemplate.opsForHash().delete(cartKey, productId.toString());
         log.info("Removed product {} from cart for user {}", productId, userId);
     }
 
     public Map<Long, CartItem> getCart(Long userId) {
-        String cartKey = "cart:user:" + userId;
+        String cartKey = CART_USER_PREFIX + userId;
         return getCartInternal(cartKey);
     }
 
     public Map<Long, CartItem> getGuestCart(String sessionId) {
-        String cartKey = "cart:guest:" + sessionId;
+        String cartKey = CART_GUEST_PREFIX + sessionId;
         return getCartInternal(cartKey);
     }
 
@@ -114,19 +145,20 @@ public class CartService {
     }
 
     public void toggleSelectItem(Long userId, Long productId, Boolean selected) {
-        String cartKey = "cart:user:" + userId;
+        String cartKey = CART_USER_PREFIX + userId;
         CartItem cartItem = (CartItem) redisTemplate.opsForHash().get(cartKey, productId.toString());
         if (cartItem == null) {
             throw new AppException(ErrorCode.CART_ITEM_NOT_FOUND);
         }
         cartItem.setSelected(selected);
         redisTemplate.opsForHash().put(cartKey, productId.toString(), cartItem);
-        log.info("Toggled select for product {} in cart for user {}: {}", productId, userId, selected);
+        redisTemplate.expire(cartKey, CART_EXPIRATION_SECONDS, TIME_UNIT); // Đặt lại TTL
+        log.info("Toggled select for product {} in cart for user {}: {} with TTL {} seconds", productId, userId, selected, CART_EXPIRATION_SECONDS);
     }
 
     public void mergeGuestCartToUserCart(String sessionId, Long userId) {
-        String guestCartKey = "cart:guest:" + sessionId;
-        String userCartKey = "cart:user:" + userId;
+        String guestCartKey = CART_GUEST_PREFIX + sessionId;
+        String userCartKey = CART_USER_PREFIX + userId;
         Map<Object, Object> guestCart = redisTemplate.opsForHash().entries(guestCartKey);
         if (guestCart.isEmpty()) {
             log.info("No guest cart found for session {}", sessionId);
@@ -137,20 +169,20 @@ public class CartService {
             redisTemplate.opsForHash().put(userCartKey, entry.getKey(), entry.getValue());
         }
         redisTemplate.delete(guestCartKey);
-        redisTemplate.expire(userCartKey, 7, TimeUnit.DAYS);
-        log.info("Merged guest cart {} to user cart {}", sessionId, userId);
+        redisTemplate.expire(userCartKey, CART_EXPIRATION_SECONDS, TIME_UNIT);
+        log.info("Merged guest cart {} to user cart {} with TTL {} seconds", sessionId, userId, CART_EXPIRATION_SECONDS);
     }
 
     @Transactional
     public void syncCartToDatabase(Long userId) {
-        String cartKey = "cart:user:" + userId;
+        String cartKey = CART_USER_PREFIX + userId;
         Map<Long, CartItem> cart = getCart(userId);
         if (cart.isEmpty()) {
             return;
         }
 
         List<Order> pendingOrders = orderRepository.findByUserIdAndStatus(userId, OrderStatus.PENDING);
-        Order order = pendingOrders.isEmpty() ? createNewPendingOrder(userId) : pendingOrders.get(0);
+        Order order = pendingOrders.isEmpty() ? createNewPendingOrder(userId) : pendingOrders.getFirst();
 
         orderLineRepository.deleteByOrder(order);
         order.getOrderLines().clear();
@@ -204,7 +236,7 @@ public class CartService {
         Map<Long, CartItem> cart = getCart(userId);
         Order order = new Order();
         order.setUser(User.builder().id(userId).build());
-        order.setStatus(OrderStatus.PENDING); // Set initial status
+        order.setStatus(OrderStatus.PENDING);
         order.setTotalPrice(BigDecimal.ZERO);
         List<OrderLine> orderLines = new ArrayList<>();
 
@@ -227,13 +259,10 @@ public class CartService {
             throw new AppException(ErrorCode.NO_ITEMS_SELECTED);
         }
 
-        // Save Order first
         order.setOrderLines(orderLines);
         Order savedOrder = orderRepository.save(order);
-        // OrderLines are saved automatically if cascade is enabled, or save explicitly
         orderLineRepository.saveAll(orderLines);
 
-        // Do not clear cart here; wait for payment confirmation
         log.info("Created order {} for user {} with selected products {}", savedOrder.getId(), userId, selectedProductIds);
         return savedOrder;
     }
