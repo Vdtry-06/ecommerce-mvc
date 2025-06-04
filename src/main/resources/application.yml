@@ -61,6 +61,8 @@ spring:
       payment-topic: payment-topic
       verification-codes: verification-codes
       payment-dlq-topic: payment-dlq-topic
+      cart-expiration-topic: cart-expiration-topic
+      cart-expiration-dlq-topic: cart-expiration-dlq-topic
 
   data:
     redis:
