@@ -8,7 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vdtry06.springboot.ecommerce.constant.OrderStatus;
-import vdtry06.springboot.ecommerce.dto.CartItem;
+import vdtry06.springboot.ecommerce.dto.response.CartItem;
 import vdtry06.springboot.ecommerce.dto.request.OrderLineRequest;
 import vdtry06.springboot.ecommerce.entity.Order;
 import vdtry06.springboot.ecommerce.mapper.OrderMapper;
@@ -95,7 +95,7 @@ public class OrderService {
     }
 
     public void addToCart(Long userId, OrderLineRequest request) {
-        cartService.addToCart(userId, request.getProductId(), request.getQuantity(), request.getToppingIds());
+        cartService.addCartItem(userId, request);
     }
 
     public void updateCartItem(Long userId, Long productId, OrderLineRequest request) {
