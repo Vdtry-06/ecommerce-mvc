@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart Expiration Notification</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            background-color: #ffffff;
+            width: 100%;
+            max-width: 640px;
+            margin: 20px auto;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+        }
+        .header {
+            background: linear-gradient(135deg, #ff4d4d, #cc0000);
+            color: #ffffff;
+            padding: 25px;
+            border-radius: 12px 12px 0 0;
+            text-align: center;
+        }
+        .header h2 {
+            margin: 0;
+            font-size: 1.8em;
+            font-weight: 500;
+        }
+        .content {
+            padding: 30px;
+            text-align: center;
+        }
+        .content p {
+            font-size: 1.1em;
+            color: #444444;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .cart-items {
+            margin: 25px 0;
+            text-align: left;
+        }
+        .cart-items h3 {
+            font-size: 1.3em;
+            color: #333333;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 500;
+        }
+        .cart-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        .cart-item img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-right: 20px;
+        }
+        .cart-item p {
+            margin: 0;
+            font-size: 1em;
+            color: #444444;
+            line-height: 1.5;
+        }
+        .cart-item p strong {
+            color: #222222;
+        }
+        .contact-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 500;
+            margin-top: 20px;
+        }
+        .contact-button:hover {
+            background-color: #0056b3;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9em;
+            color: #777777;
+            border-top: 1px solid #e0e0e0;
+            margin-top: 20px;
+        }
+        .footer p {
+            margin: 0;
+            line-height: 1.5;
+        }
+        @media only screen and (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            .header {
+                padding: 20px;
+            }
+            .content {
+                padding: 20px;
+            }
+            .cart-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .cart-item img {
+                margin-bottom: 15px;
+                margin-right: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h2>Cart Expiration Notification</h2>
+    </div>
+    <div class="content">
+        <p>Dear <span th:text="${username != null ? username : 'Customer'}"></span>,</p>
+        <p>We noticed that your shopping cart has expired. The items listed below are no longer reserved.</p>
+        <div class="cart-items" th:if="${cartItems != null and not #lists.isEmpty(cartItems)}">
+            <h3>Expired Cart Items</h3>
+            <div th:each="item : ${cartItems}" class="cart-item">
+                <img th:src="${item.productImageUrl} ?: 'https://res.cloudinary.com/vdtry-06/image/upload/v1/ecommerce/test.png'"
+                     th:alt="${item.productName ?: 'Product'}" />
+                <div>
+                    <p><strong th:text="${item.productName ?: 'Unknown Product'}"></strong></p>
+                    <p>Quantity: <span th:text="${item.quantity ?: 0}"></span></p>
+                    <p>Price: <span th:text="${item.price != null ? #numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT') : 'N/A'}"></span> VNĐ</p>
+                </div>
+            </div>
+        </div>
+        <p th:unless="${cartItems != null and not #lists.isEmpty(cartItems)}">No cart items available.</p>
+        <p>Please visit our store to select your products again and continue shopping!</p>
+        <a th:href="'http://localhost:3000/'" class="contact-button">Shop Now</a>
+    </div>
+    <div class="footer">
+        <p>This is an automated message. Please do not reply directly to this email.</p>
+        <p>© 2025 Ecommerce App. All rights reserved.</p>
+    </div>
+</div>
+</body>
+</html>
