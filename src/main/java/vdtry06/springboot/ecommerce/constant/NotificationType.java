@@ -14,7 +14,8 @@ public enum NotificationType {
     DELIVERY_CONFIRMATION("delivery-confirmation.html", "Your order has been delivered"),
     ORDER_SHIPPED("order-shipped.html", "Your order is on the way"),
     ORDER_RECEIVED("order-received.html", "You have received your order"),
-    EMAIL_VERIFICATION("confirm-email.html", "Account verification")
+    EMAIL_VERIFICATION("confirm-email.html", "Account verification"),
+    CART_EXPIRATION("cart-expiration.html", "Your Cart Has Expired"),
     ;
     String template;
     String subject;

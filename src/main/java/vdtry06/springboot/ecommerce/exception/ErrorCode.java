@@ -70,6 +70,7 @@ public enum ErrorCode {
     CART_READ_FAILED(1070, "Cart read failed", HttpStatus.BAD_REQUEST),
     CART_WRITE_FAILED(1071, "Cart write failed", HttpStatus.BAD_REQUEST),
     CART_EMPTY(1072, "Cart is empty", HttpStatus.BAD_REQUEST),
+    CART_ITEM_NOT_FOUND(1073, "Cart item not found", HttpStatus.BAD_REQUEST),
     ;
 
     private final int code;
