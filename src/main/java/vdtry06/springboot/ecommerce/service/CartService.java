@@ -1,5 +1,6 @@
 package vdtry06.springboot.ecommerce.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
 public class CartService {
     private static final String CART_USER_PREFIX = "cart:user:";
     private static final String CART_GUEST_PREFIX = "cart:guest:";
-    private static final long CART_EXPIRATION_SECONDS = 60; // 10 giây để test
+    private static final long CART_EXPIRATION_SECONDS = 100000000;
     private static final TimeUnit TIME_UNIT = TimeUnit.SECONDS;
 
     RedisTemplate<String, Object> redisTemplate;
@@ -42,21 +43,20 @@ public class CartService {
     ObjectMapper objectMapper;
 
     public void addCartItem(Long userId, OrderLineRequest request) {
-        String cartKey = "cart:user:" + userId;
+        String cartKey = CART_USER_PREFIX + userId;
         Product product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> {
-                    log.error("Product not found: {}", request.getProductId());
-                    return new IllegalArgumentException("Product not found: " + request.getProductId());
-                });
+                .orElseThrow(() -> new IllegalArgumentException("Product not found: " + request.getProductId()));
 
-        CartItem cartItem = new CartItem();
-        cartItem.setProductId(request.getProductId());
-        cartItem.setProductName(product.getName());
-        cartItem.setPrice(product.getPrice());
-        cartItem.setProductImageUrl(product.getImageUrls().getFirst());
-        cartItem.setQuantity(request.getQuantity());
-        cartItem.setSelected(false);
-        cartItem.setToppingIds(new HashSet<>(request.getToppingIds()));
+        CartItem cartItem = CartItem.builder()
+                .productId(request.getProductId())
+                .productName(product.getName())
+                .price(product.getPrice())
+                .description(product.getDescription())
+                .productImageUrl(product.getImageUrls().getFirst())
+                .quantity(request.getQuantity())
+                .selected(false)
+                .toppingIds(new HashSet<>(request.getToppingIds()))
+                .build();
 
         try {
             String cartItemJson = objectMapper.writeValueAsString(cartItem);
@@ -95,7 +95,18 @@ public class CartService {
 
     public void updateCartItem(Long userId, Long productId, Integer quantity, Set<Long> toppingIds) {
         String cartKey = CART_USER_PREFIX + userId;
-        CartItem cartItem = (CartItem) redisTemplate.opsForHash().get(cartKey, productId.toString());
+        Object value = redisTemplate.opsForHash().get(cartKey, productId.toString());
+        CartItem cartItem = null;
+
+        if (value != null) {
+            try {
+                cartItem = objectMapper.readValue(value.toString(), CartItem.class);
+            } catch (JsonProcessingException e) {
+                log.error("Failed to deserialize cart item for user {} and product {}: {}", userId, productId, e.getMessage());
+                throw new RuntimeException("Failed to deserialize cart item", e);
+            }
+        }
+
         if (cartItem == null) {
             throw new AppException(ErrorCode.CART_ITEM_NOT_FOUND);
         }
@@ -114,9 +125,15 @@ public class CartService {
             cartItem.setToppingIds(toppings.stream().map(Topping::getId).collect(Collectors.toSet()));
         }
 
-        redisTemplate.opsForHash().put(cartKey, productId.toString(), cartItem);
-        redisTemplate.expire(cartKey, CART_EXPIRATION_SECONDS, TIME_UNIT); // Đặt lại TTL
-        log.info("Updated cart item {} for user {} with TTL {} seconds", productId, userId, CART_EXPIRATION_SECONDS);
+        try {
+            String cartItemJson = objectMapper.writeValueAsString(cartItem); // Serialize lại
+            redisTemplate.opsForHash().put(cartKey, productId.toString(), cartItemJson);
+            redisTemplate.expire(cartKey, CART_EXPIRATION_SECONDS, TIME_UNIT);
+            log.info("Updated cart item {} for user {} with TTL {} seconds", productId, userId, CART_EXPIRATION_SECONDS);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize cart item for user {} and product {}: {}", userId, productId, e.getMessage());
+            throw new RuntimeException("Failed to serialize cart item", e);
+        }
     }
 
     public void removeCartItem(Long userId, Long productId) {
@@ -140,8 +157,17 @@ public class CartService {
         return cartEntries.entrySet().stream()
                 .collect(Collectors.toMap(
                         entry -> Long.valueOf((String) entry.getKey()),
-                        entry -> (CartItem) entry.getValue()
-                ));
+                        entry -> {
+                            try {
+                                return objectMapper.readValue((String) entry.getValue(), CartItem.class);
+                            } catch (JsonProcessingException e) {
+                                log.error("Failed to deserialize cart item for key {}: {}", entry.getKey(), e.getMessage());
+                                return null;
+                            }
+                        }
+                )).entrySet().stream()
+                .filter(entry -> entry.getValue() != null)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     public void toggleSelectItem(Long userId, Long productId, Boolean selected) {

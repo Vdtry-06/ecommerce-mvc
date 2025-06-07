@@ -22,6 +22,7 @@ public class CartItem implements Serializable {
     String productName;
     BigDecimal price;
     String productImageUrl;
+    String description;
 
     @JsonProperty("quantity")
     Integer quantity;
