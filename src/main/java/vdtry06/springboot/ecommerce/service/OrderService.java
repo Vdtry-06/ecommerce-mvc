@@ -8,11 +8,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vdtry06.springboot.ecommerce.constant.OrderStatus;
+import vdtry06.springboot.ecommerce.dto.response.CartItem;
+import vdtry06.springboot.ecommerce.dto.request.OrderLineRequest;
 import vdtry06.springboot.ecommerce.entity.Order;
-import vdtry06.springboot.ecommerce.entity.OrderLine;
 import vdtry06.springboot.ecommerce.mapper.OrderMapper;
 import vdtry06.springboot.ecommerce.dto.request.OrderRequest;
-import vdtry06.springboot.ecommerce.dto.response.OrderLineResponse;
 import vdtry06.springboot.ecommerce.dto.response.OrderResponse;
 import vdtry06.springboot.ecommerce.exception.AppException;
 import vdtry06.springboot.ecommerce.exception.ErrorCode;
@@ -23,6 +23,7 @@ import vdtry06.springboot.ecommerce.repository.UserRepository;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -33,6 +34,7 @@ public class OrderService {
     UserRepository userRepository;
     OrderMapper orderMapper;
     OrderLineService orderLineService;
+    CartService cartService;
 
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
@@ -90,6 +92,26 @@ public class OrderService {
             throw new AppException(ErrorCode.ORDER_STATE_PENDING);
         }
         orderRepository.deleteById(orderId);
+    }
+
+    public void addToCart(Long userId, OrderLineRequest request) {
+        cartService.addCartItem(userId, request);
+    }
+
+    public void updateCartItem(Long userId, Long productId, OrderLineRequest request) {
+        cartService.updateCartItem(userId, productId, request.getQuantity(), request.getToppingIds());
+    }
+
+    public void removeCartItem(Long userId, Long productId) {
+        cartService.removeCartItem(userId, productId);
+    }
+
+    public Map<Long, CartItem> getCart(Long userId) {
+        return cartService.getCart(userId);
+    }
+
+    public void toggleSelectItem(Long userId, Long productId, Boolean selected) {
+        cartService.toggleSelectItem(userId, productId, selected);
     }
 }
 

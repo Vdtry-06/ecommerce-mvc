@@ -1,69 +1,55 @@
 package vdtry06.springboot.ecommerce.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vdtry06.springboot.ecommerce.config.payment.VNPAYConfig;
 import vdtry06.springboot.ecommerce.constant.OrderStatus;
 import vdtry06.springboot.ecommerce.constant.PaymentMethod;
 import vdtry06.springboot.ecommerce.config.vnPay.VNPayUtil;
-import vdtry06.springboot.ecommerce.entity.Payment;
+import vdtry06.springboot.ecommerce.dto.request.OrderLineRequest;
+import vdtry06.springboot.ecommerce.entity.*;
 import vdtry06.springboot.ecommerce.dto.response.VNPayResponse;
-import vdtry06.springboot.ecommerce.entity.Order;
-import vdtry06.springboot.ecommerce.entity.OrderLine;
 import vdtry06.springboot.ecommerce.exception.AppException;
 import vdtry06.springboot.ecommerce.exception.ErrorCode;
 import vdtry06.springboot.ecommerce.repository.OrderRepository;
 import vdtry06.springboot.ecommerce.repository.OrderLineRepository;
 import vdtry06.springboot.ecommerce.repository.PaymentRepository;
 import vdtry06.springboot.ecommerce.repository.ProductRepository;
-import vdtry06.springboot.ecommerce.entity.Product;
-import vdtry06.springboot.ecommerce.entity.User;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class PaymentService {
-
     PaymentRepository paymentRepository;
     OrderRepository orderRepository;
-    OrderLineRepository orderLineRepository;
-    ProductRepository productRepository;
     NotificationService notificationService;
     VNPAYConfig vnpayConfig;
+    CartService cartService;
+    ProductRepository productRepository;
+    RedisTemplate<String, Object> redisTemplate;
 
     @Transactional
-    public VNPayResponse createVNPayPaymentForSelectedItems(HttpServletRequest request, List<OrderLine> selectedOrderLines, Long userId) {
-        if (selectedOrderLines == null || selectedOrderLines.isEmpty()) {
+    public VNPayResponse createVNPayPaymentForSelectedItems(HttpServletRequest request, Long userId, List<Long> selectedProductIds) {
+        if (selectedProductIds == null || selectedProductIds.isEmpty()) {
             throw new AppException(ErrorCode.NO_ITEMS_SELECTED);
         }
 
-        BigDecimal totalPrice = selectedOrderLines.stream()
-                .map(OrderLine::getPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        User user = User.builder().id(userId).build();
-
-        List<Order> pendingOrders = orderRepository.findByUserIdAndStatus(userId, OrderStatus.PENDING);
-        Order existingPendingOrder = pendingOrders.isEmpty() ? null : pendingOrders.get(0);
-
-        Order paymentOrder;
-        if (existingPendingOrder != null) {
-            paymentOrder = createNewOrderForPayment(user, selectedOrderLines, totalPrice);
-            removeSelectedItemsFromOrder(existingPendingOrder, selectedOrderLines);
-        } else {
-            paymentOrder = createNewOrderForPayment(user, selectedOrderLines, totalPrice);
-        }
+        Order paymentOrder = cartService.checkoutSelectedItems(userId, selectedProductIds);
+        BigDecimal totalPrice = paymentOrder.getTotalPrice();
 
         long amount = totalPrice.multiply(BigDecimal.valueOf(100)).longValue();
         String bankCode = request.getParameter("bankCode");
@@ -93,61 +79,24 @@ public class PaymentService {
     }
 
     private Order createNewOrderForPayment(User user, List<OrderLine> selectedOrderLines, BigDecimal totalPrice) {
-        Order newOrder = Order.builder()
+        Order order = Order.builder()
                 .user(user)
                 .status(OrderStatus.PENDING)
                 .totalPrice(totalPrice)
-                .orderLines(new ArrayList<>())
+                .orderLines(new ArrayList<>(selectedOrderLines))
                 .payments(new ArrayList<>())
                 .notifications(new ArrayList<>())
                 .build();
-
-        orderRepository.save(newOrder);
-        log.info("Created new order for payment: {}", newOrder.getId());
-
-        for (OrderLine orderLine : selectedOrderLines) {
-            Product product = productRepository.findById(orderLine.getProduct().getId())
-                    .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
-
-            OrderLine newLine = OrderLine.builder()
-                    .order(newOrder)
-                    .product(product)
-                    .quantity(orderLine.getQuantity())
-                    .price(orderLine.getPrice())
-                    .build();
-
-            orderLineRepository.save(newLine);
-            newOrder.getOrderLines().add(newLine);
-        }
-
-        orderRepository.save(newOrder);
-        return newOrder;
+        return orderRepository.save(order);
     }
 
-    private void removeSelectedItemsFromOrder(Order order, List<OrderLine> selectedOrderLines) {
-        List<Long> selectedProductIds = selectedOrderLines.stream()
-                .map(orderLine -> orderLine.getProduct().getId())
-                .toList();
-
-        List<OrderLine> linesToRemove = order.getOrderLines().stream()
-                .filter(line -> selectedProductIds.contains(line.getProduct().getId()))
-                .toList();
-
-        for (OrderLine line : linesToRemove) {
-            order.getOrderLines().remove(line);
-            orderLineRepository.delete(line);
-        }
-
-        if (order.getOrderLines().isEmpty()) {
-            orderRepository.delete(order);
-            log.info("Deleted empty order: {}", order.getId());
-        } else {
-            order.setTotalPrice(order.getOrderLines().stream()
-                    .map(OrderLine::getPrice)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add));
-            orderRepository.save(order);
-            log.info("Updated remaining order: {}", order.getId());
-        }
+    private void removeSelectedItemsFromOrder(Order existingOrder, List<OrderLine> selectedOrderLines) {
+        List<OrderLine> remainingOrderLines = existingOrder.getOrderLines().stream()
+                .filter(orderLine -> selectedOrderLines.stream()
+                        .noneMatch(selected -> selected.getProduct().getId().equals(orderLine.getProduct().getId())))
+                .collect(Collectors.toList());
+        existingOrder.setOrderLines(remainingOrderLines);
+        orderRepository.save(existingOrder);
     }
 
     @Transactional
@@ -188,6 +137,16 @@ public class PaymentService {
 
             order.setStatus(OrderStatus.PAID);
             orderRepository.save(order);
+
+            // Remove selected items from Redis cart
+            Long userId = order.getUser().getId();
+            String cartKey = "cart:user:" + userId;
+            List<OrderLine> orderLines = order.getOrderLines();
+            for (OrderLine orderLine : orderLines) {
+                Long productId = orderLine.getProduct().getId();
+                redisTemplate.opsForHash().delete(cartKey, productId.toString());
+                log.info("Removed product {} from cart:user:{}", productId, userId);
+            }
 
             User user = order.getUser();
             if (user != null) {

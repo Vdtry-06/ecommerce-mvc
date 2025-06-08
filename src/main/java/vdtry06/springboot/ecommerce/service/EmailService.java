@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import vdtry06.springboot.ecommerce.constant.NotificationType;
+import vdtry06.springboot.ecommerce.dto.response.CartItem;
 import vdtry06.springboot.ecommerce.dto.response.PaymentConfirmation;
 
 import java.math.BigDecimal;
@@ -64,5 +65,29 @@ public class EmailService {
         helper.setSubject(NotificationType.PAYMENT_CONFIRMATION.getSubject());
         helper.setText(htmlContent, true);
         mailSender.send(mimeMessage);
+    }
+
+    @Retryable(value = MessagingException.class, maxAttempts = 3, backoff = @Backoff(delay = 1000))
+    public void sendCartExpirationEmail(String destinationEmail, String username, List<CartItem> cartItems) throws MessagingException {
+        if (destinationEmail == null || destinationEmail.isEmpty()) {
+            log.error("Cannot send cart expiration email: destination email is null or empty");
+            throw new MessagingException("Invalid destination email");
+        }
+
+        MimeMessage mimeMessage = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+        Context context = new Context();
+        context.setVariable("username", username != null ? username : "Customer");
+        context.setVariable("cartItems", cartItems);
+
+        log.info("Sending cart expiration email to {} with {} cart items", destinationEmail, cartItems != null ? cartItems.size() : 0);
+
+        String htmlContent = templateEngine.process(NotificationType.CART_EXPIRATION.getTemplate(), context);
+        helper.setTo(destinationEmail);
+        helper.setSubject(NotificationType.CART_EXPIRATION.getSubject());
+        helper.setText(htmlContent, true);
+        mailSender.send(mimeMessage);
+        log.info("Cart expiration email sent successfully to {}", destinationEmail);
     }
 }

@@ -30,7 +30,7 @@ public class GlobalExceptionHandler {
     // lỗi ngoại lệ không tìm thấy
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiResponse> handlingRuntimeException(RuntimeException exception) {
-        //        log.error("Exception: ", exception);
+        log.error("Exception: ", exception);
         ErrorCode errorCode = ErrorCode.UNCATEGORIZED_EXCEPTION;
         return ResponseEntity.badRequest()
                 .body(ApiResponse.builder()
@@ -42,6 +42,7 @@ public class GlobalExceptionHandler {
     // lỗi ngoại lệ bắt được
     @ExceptionHandler(AppException.class)
     ResponseEntity<ApiResponse> handlingAppException(AppException exception) {
+        log.error("Exception: ", exception);
         ErrorCode errorCode = exception.getErrorCode();
 
         return ResponseEntity.status(errorCode.getStatusCode())

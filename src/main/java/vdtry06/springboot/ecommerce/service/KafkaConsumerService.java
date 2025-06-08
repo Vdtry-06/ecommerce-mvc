@@ -13,6 +13,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Service;
+import vdtry06.springboot.ecommerce.dto.response.CartExpirationNotification;
 import vdtry06.springboot.ecommerce.dto.response.PaymentConfirmation;
 import vdtry06.springboot.ecommerce.entity.Notification;
 import vdtry06.springboot.ecommerce.entity.Order;
@@ -39,6 +40,7 @@ public class KafkaConsumerService {
     PaymentRepository paymentRepository;
     OrderRepository orderRepository;
     KafkaTemplate<String, String> kafkaTemplate;
+    ObjectMapper objectMapper;
 
     @KafkaListener(topics = "verification-codes")
     public void listen(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
@@ -52,7 +54,6 @@ public class KafkaConsumerService {
             acknowledgment.acknowledge();
         } catch (MessagingException e) {
             log.error("Failed to send verification email to {}: {}", email, e.getMessage(), e);
-            // Optionally send to DLQ
         }
     }
 
@@ -153,6 +154,45 @@ public class KafkaConsumerService {
         } catch (Exception e) {
             log.error("ERROR - Unexpected error: {}", e.getMessage(), e);
             kafkaTemplate.send("payment-dlq-topic", record.key(), message);
+        }
+    }
+
+    @KafkaListener(topics = "cart-expiration-topic", groupId = "ecommerce-group")
+    public void consumeCartExpirationMessage(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
+        String message = record.value();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        try {
+            CartExpirationNotification cartExpiration = objectMapper.readValue(message, CartExpirationNotification.class);
+
+            log.info("Processing cart expiration for user: {}, email: {}, cart items: {}",
+                    cartExpiration.getUsername(), cartExpiration.getEmail(), cartExpiration.getCartItems());
+
+            if (cartExpiration.getEmail() == null || cartExpiration.getEmail().isEmpty()) {
+                log.error("Invalid email for user {}: {}", cartExpiration.getUserId(), cartExpiration.getEmail());
+                kafkaTemplate.send("cart-expiration-dlq-topic", record.key(), message);
+                acknowledgment.acknowledge();
+                return;
+            }
+
+            try {
+                emailService.sendCartExpirationEmail(cartExpiration.getEmail(), cartExpiration.getUsername(), cartExpiration.getCartItems());
+                log.info("Cart expiration email sent to {}", cartExpiration.getEmail());
+                acknowledgment.acknowledge();
+            } catch (MessagingException e) {
+                log.error("Failed to send cart expiration email to {}: {}", cartExpiration.getEmail(), e.getMessage(), e);
+                kafkaTemplate.send("cart-expiration-dlq-topic", record.key(), message);
+                acknowledgment.acknowledge();
+            }
+
+        } catch (JsonProcessingException e) {
+            log.error("Invalid JSON format for cart expiration message: {}", message, e);
+            kafkaTemplate.send("cart-expiration-dlq-topic", record.key(), message);
+            acknowledgment.acknowledge();
+        } catch (Exception e) {
+            log.error("Unexpected error processing cart expiration message: {}", e.getMessage(), e);
+            kafkaTemplate.send("cart-expiration-dlq-topic", record.key(), message);
+            acknowledgment.acknowledge();
         }
     }
 }

@@ -67,7 +67,10 @@ public enum ErrorCode {
     TOPPING_UPDATE_FAILED(1067, "Topping update failed by user", HttpStatus.BAD_REQUEST),
     PRICE_CALCULATION_FAILED(1068, "Price calculation failed", HttpStatus.BAD_REQUEST),
     ORDER_LINE_SAVE_FAILED(1069, "Order line save failed", HttpStatus.BAD_REQUEST),
-
+    CART_READ_FAILED(1070, "Cart read failed", HttpStatus.BAD_REQUEST),
+    CART_WRITE_FAILED(1071, "Cart write failed", HttpStatus.BAD_REQUEST),
+    CART_EMPTY(1072, "Cart is empty", HttpStatus.BAD_REQUEST),
+    CART_ITEM_NOT_FOUND(1073, "Cart item not found", HttpStatus.BAD_REQUEST),
     ;
 
     private final int code;

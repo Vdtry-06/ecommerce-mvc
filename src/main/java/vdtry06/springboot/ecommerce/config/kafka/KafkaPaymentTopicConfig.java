@@ -25,4 +25,22 @@ public class KafkaPaymentTopicConfig {
                 .replicas(1)
                 .build();
     }
+
+    @Bean
+    public NewTopic cartExpirationTopic() {
+        return TopicBuilder
+                .name("cart-expiration-topic")
+                .partitions(6)
+                .replicas(3)
+                .build();
+    }
+
+    @Bean
+    public NewTopic cartExpirationDlqTopic() {
+        return TopicBuilder
+                .name("cart-expiration-dlq-topic")
+                .partitions(6)
+                .replicas(1)
+                .build();
+    }
 }
