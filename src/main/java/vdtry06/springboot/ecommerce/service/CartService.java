@@ -126,7 +126,7 @@ public class CartService {
         }
 
         try {
-            String cartItemJson = objectMapper.writeValueAsString(cartItem); // Serialize lại
+            String cartItemJson = objectMapper.writeValueAsString(cartItem);
             redisTemplate.opsForHash().put(cartKey, productId.toString(), cartItemJson);
             redisTemplate.expire(cartKey, CART_EXPIRATION_SECONDS, TIME_UNIT);
             log.info("Updated cart item {} for user {} with TTL {} seconds", productId, userId, CART_EXPIRATION_SECONDS);
@@ -178,7 +178,7 @@ public class CartService {
         }
         cartItem.setSelected(selected);
         redisTemplate.opsForHash().put(cartKey, productId.toString(), cartItem);
-        redisTemplate.expire(cartKey, CART_EXPIRATION_SECONDS, TIME_UNIT); // Đặt lại TTL
+        redisTemplate.expire(cartKey, CART_EXPIRATION_SECONDS, TIME_UNIT);
         log.info("Toggled select for product {} in cart for user {}: {} with TTL {} seconds", productId, userId, selected, CART_EXPIRATION_SECONDS);
     }
 
@@ -271,13 +271,17 @@ public class CartService {
             if (cartItem != null) {
                 Product product = productRepository.findById(productId)
                         .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+                Set<Topping> toppings = validateToppings(cartItem.getToppingIds(), product);
+                BigDecimal linePrice = calculatePrice(product, cartItem.getQuantity(), toppings);
+
                 OrderLine orderLine = new OrderLine();
                 orderLine.setProduct(product);
                 orderLine.setQuantity(cartItem.getQuantity());
-                orderLine.setPrice(product.getPrice());
+                orderLine.setPrice(linePrice);
+                orderLine.setSelectedToppings(toppings);
                 orderLine.setOrder(order);
                 orderLines.add(orderLine);
-                order.setTotalPrice(order.getTotalPrice().add(product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity()))));
+                order.setTotalPrice(order.getTotalPrice().add(linePrice));
             }
         }
 
