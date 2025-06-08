@@ -56,6 +56,20 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    topics:
+      cart-topic: cart-topic
+      payment-topic: payment-topic
+      verification-codes: verification-codes
+      payment-dlq-topic: payment-dlq-topic
+      cart-expiration-topic: cart-expiration-topic
+      cart-expiration-dlq-topic: cart-expiration-dlq-topic
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+
 
 jwt:
   signerKey: "${JWT_SIGNER_KEY}"

@@ -22,7 +22,6 @@ import vdtry06.springboot.ecommerce.repository.ToppingRepository;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,12 +35,13 @@ public class OrderLineService {
     ProductRepository productRepository;
     OrderLineMapper orderLineMapper;
     ToppingRepository toppingRepository;
+    CartService cartService;
 
     @Transactional
     public OrderLineResponse addOrderLine(Long orderId, OrderLineRequest request) {
         Order order = validateOrder(orderId);
         Product product = validateProduct(request.getProductId(), request.getQuantity());
-        Set<Topping> toppings = validateToppings(request.getToppingIds(), product);
+        Set<Topping> toppings = cartService.validateToppings(request.getToppingIds(), product);
         OrderLine orderLine = orderLineRepository.findByOrderIdAndProductId(orderId, request.getProductId())
                 .map(existing -> updateExistingOrderLine(
                         existing,
@@ -102,7 +102,7 @@ public class OrderLineService {
                     toppings = Set.of();
                     log.info("Cleared all toppings for order line: {}", orderLineId);
                 } else {
-                    toppings = validateToppings(request.getToppingIds(), product);
+                    toppings = cartService.validateToppings(request.getToppingIds(), product);
                     orderLine.setSelectedToppings(toppings);
                     log.info("Updated toppings for order line: {} to: {}", orderLineId, toppings);
                 }
@@ -112,7 +112,7 @@ public class OrderLineService {
             }
         }
         try {
-            orderLine.setPrice(calculatePrice(product, quantity, toppings));
+            orderLine.setPrice(cartService.calculatePrice(product, quantity, toppings));
             log.debug("Recalculated price: {}", orderLine.getPrice());
         } catch (Exception e) {
             log.error("Failed to calculate price for order line: {}", orderLineId, e);
@@ -173,23 +173,11 @@ public class OrderLineService {
         return product;
     }
 
-    private Set<Topping> validateToppings(Set<Long> toppingIds, Product product) {
-        if (toppingIds == null || toppingIds.isEmpty()) {
-            return Set.of();
-        }
-        Set<Topping> toppings = toppingRepository.findAllById(toppingIds).stream()
-                .filter(topping -> product.getToppings().contains(topping))
-                .collect(Collectors.toSet());
-        if (toppings.size() != toppingIds.size()) {
-            throw new AppException(ErrorCode.INVALID_TOPPING);
-        }
-        return toppings;
-    }
 
     private OrderLine updateExistingOrderLine(OrderLine existing, OrderLineRequest request, Product product, Set<Topping> toppings) {
         existing.setQuantity(existing.getQuantity() + request.getQuantity());
         existing.setSelectedToppings(toppings);
-        existing.setPrice(calculatePrice(product, existing.getQuantity(), toppings));
+        existing.setPrice(cartService.calculatePrice(product, existing.getQuantity(), toppings));
         return existing;
     }
 
@@ -198,23 +186,11 @@ public class OrderLineService {
                 .order(order)
                 .product(product)
                 .quantity(request.getQuantity())
-                .price(calculatePrice(product, request.getQuantity(), toppings))
+                .price(cartService.calculatePrice(product, request.getQuantity(), toppings))
                 .selectedToppings(toppings)
                 .build();
     }
 
-    private BigDecimal calculatePrice(Product product, Integer quantity, Set<Topping> toppings) {
-        if (product.getPrice() == null || quantity == null) {
-            log.error("Invalid price calculation inputs: product price: {}, quantity: {}", product.getPrice(), quantity);
-            throw new AppException(ErrorCode.PRICE_CALCULATION_FAILED);
-        }
-        BigDecimal basePrice = product.getPrice().multiply(BigDecimal.valueOf(quantity));
-        BigDecimal toppingsPrice = toppings.stream()
-                .map(topping -> topping.getPrice() != null ? topping.getPrice() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .multiply(BigDecimal.valueOf(quantity));
-        return basePrice.add(toppingsPrice);
-    }
 
     private void updateOrderTotalPrice(Order order) {
         BigDecimal totalPrice = order.getOrderLines().stream()

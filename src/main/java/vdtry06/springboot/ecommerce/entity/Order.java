@@ -35,7 +35,7 @@ public class Order {
     User user;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<OrderLine> orderLines;
+    List<OrderLine> orderLines = new ArrayList<>();
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     List<Payment> payments = new ArrayList<>();
