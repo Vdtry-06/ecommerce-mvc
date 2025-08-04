@@ -12,8 +12,8 @@ public class KafkaPaymentTopicConfig {
     public NewTopic paymentTopic() {
         return TopicBuilder
                 .name("payment-topic")
-                .partitions(6)
-                .replicas(3)
+                .partitions(3)
+                .replicas(1) // Changed from 3 to 1 since we only have 1 Kafka broker
                 .build();
     }
 
@@ -21,7 +21,7 @@ public class KafkaPaymentTopicConfig {
     public NewTopic paymentDlqTopic() {
         return TopicBuilder
                 .name("payment-dlq-topic")
-                .partitions(6)
+                .partitions(3)
                 .replicas(1)
                 .build();
     }
@@ -30,8 +30,8 @@ public class KafkaPaymentTopicConfig {
     public NewTopic cartExpirationTopic() {
         return TopicBuilder
                 .name("cart-expiration-topic")
-                .partitions(6)
-                .replicas(3)
+                .partitions(3)
+                .replicas(1) // Changed from 3 to 1
                 .build();
     }
 
@@ -39,7 +39,25 @@ public class KafkaPaymentTopicConfig {
     public NewTopic cartExpirationDlqTopic() {
         return TopicBuilder
                 .name("cart-expiration-dlq-topic")
-                .partitions(6)
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic cartTopic() {
+        return TopicBuilder
+                .name("cart-topic")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic verificationCodesTopic() {
+        return TopicBuilder
+                .name("verification-codes")
+                .partitions(3)
                 .replicas(1)
                 .build();
     }
