@@ -13,7 +13,7 @@ public class KafkaPaymentTopicConfig {
         return TopicBuilder
                 .name("payment-topic")
                 .partitions(3)
-                .replicas(1) // Changed from 3 to 1 since we only have 1 Kafka broker
+                .replicas(1)
                 .build();
     }
 
@@ -31,7 +31,7 @@ public class KafkaPaymentTopicConfig {
         return TopicBuilder
                 .name("cart-expiration-topic")
                 .partitions(3)
-                .replicas(1) // Changed from 3 to 1
+                .replicas(1)
                 .build();
     }
 
