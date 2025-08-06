@@ -12,7 +12,10 @@ FROM amazoncorretto:21-alpine
 
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
+COPY docker/entrypoint.sh /entrypoint.sh
+
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["/entrypoint.sh"]

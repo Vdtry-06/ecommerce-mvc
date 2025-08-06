@@ -6,14 +6,17 @@ server:
 spring:
   datasource:
     driverClassName: "com.mysql.cj.jdbc.Driver"
-    url: jdbc:mysql://localhost:3306/ecommerce?createDatabaseIfNotExist=true
-    username: ${DBMS_USERNAME}
-    password: ${DBMS_PASSWORD}
+    url: jdbc:mysql://mysql:3306/ecommerce?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DBMS_USERNAME:root}
+    password: ${DBMS_PASSWORD:root}
 
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
 
   mail:
     host: smtp.gmail.com
@@ -45,7 +48,7 @@ spring:
               - user:email
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:kafka:29092}
     consumer:
       group-id: ecommerce-group
       auto-offset-reset: earliest
@@ -56,6 +59,8 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
     topics:
       cart-topic: cart-topic
       payment-topic: payment-topic
@@ -66,16 +71,15 @@ spring:
 
   data:
     redis:
-      host: localhost
+      host: ${SPRING_DATA_REDIS_HOST:redis}
       port: 6379
       database: 0
 
-
 jwt:
   signerKey: "${JWT_SIGNER_KEY}"
-  valid-duration: ${JWT_VALID_DURATION:3600} # in seconds 3600
-  refreshable-duration: ${JWT_REFRESH_DURATION:36000} # in seconds 36000
-  expiration-time: 360000 # 360000
+  valid-duration: ${JWT_VALID_DURATION:3600}
+  refreshable-duration: ${JWT_REFRESH_DURATION:36000}
+  expiration-time: 360000
 
 payment:
   vnPay:

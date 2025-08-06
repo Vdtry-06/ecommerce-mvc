@@ -43,4 +43,49 @@ public class KafkaPaymentTopicConfig {
                 .replicas(1)
                 .build();
     }
+
+    @Bean
+    public NewTopic paymentDlqTopic() {
+        return TopicBuilder
+                .name("payment-dlq-topic")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic cartExpirationTopic() {
+        return TopicBuilder
+                .name("cart-expiration-topic")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic cartExpirationDlqTopic() {
+        return TopicBuilder
+                .name("cart-expiration-dlq-topic")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic cartTopic() {
+        return TopicBuilder
+                .name("cart-topic")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic verificationCodesTopic() {
+        return TopicBuilder
+                .name("verification-codes")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
 }
